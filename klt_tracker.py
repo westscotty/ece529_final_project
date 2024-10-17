@@ -210,8 +210,8 @@ def process_video(input_video_path, output_video_path, frame_rate=30, window_siz
         # Write the processed grayscale frame with bounding boxes to the output video
         out.write(gray_frame)
         
-        if frame_id == 20:
-            break
+        # if frame_id == 20:
+        #     break
             
         frame_id += 1
         

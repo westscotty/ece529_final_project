@@ -70,6 +70,6 @@ def process_video(input_video_path, output_video_path):
     print(f"Video saved successfully as {output_video_path}.")
 
 # Example usage
-video_file = 'data/videos/drone_following_model_plane.mp4'
+video_file = 'data/videos/blue_angels_formation.mp4'
 output_video = 'output_video.avi'  # Output video in AVI format
 process_video(video_file, output_video)

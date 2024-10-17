@@ -206,5 +206,5 @@ def process_video(input_video_path, output_video_path, frame_rate=30):
     
 
 # Example usage:
-video_file = 'data/videos/drone_following_model_plane.mp4'
+video_file = 'data/videos/blue_angels_formation.mp4'
 process_video(video_file, f"{video_file.split('.')[0]}_output.mp4")
