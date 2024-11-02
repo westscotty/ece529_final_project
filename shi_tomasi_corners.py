@@ -123,7 +123,7 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
     result_img = img.copy()
     result_img_bgr = cv2.cvtColor(result_img, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
 
-    for (y, x) in tqdm(coords):
+    for (y, x) in coords:
         cv2.circle(result_img_bgr, (x, y), 10, (75, 180, 0), -1)  # Draw red circles
 
     return result_img_bgr, coords  # Return the colored image and coordinates
