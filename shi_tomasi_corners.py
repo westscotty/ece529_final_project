@@ -7,7 +7,8 @@ from copy import copy
 import argparse
 from sobel_operator import sobel_operator_cv2, sobel_operator_numpy
 from gaussian_blur import gaussian_blur_cv2, gaussian_blur_numpy
-from utilities import error_metrics
+from utilities import error_metrics, draw_corner_markers, debug_messages, coordinate_density
+from image_operations import high_pass_filter, gaussian_low_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
 
 sobel_operators = { 'cv2': sobel_operator_cv2,
@@ -16,10 +17,6 @@ sobel_operators = { 'cv2': sobel_operator_cv2,
 gaussian_blur   = { 'cv2': gaussian_blur_cv2,
                     'numpy': gaussian_blur_numpy
                   }
-def debug_messages(message):
-    print(f"\n<< DEBUG >>\n")
-    print(message)
-    print("\n<< DEBUG >>\n")
 
 def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
     
@@ -122,16 +119,9 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
 
     # Convert flat indices back to 2D coordinates
     coords = np.array(np.unravel_index(top_indices, response.shape)).T
+    filtered_coords = coordinate_density(coords, min_dist, max_corners)
     
-    # Enforce minimum distance constraint
-    filtered_coords = []
-    for coord in coords:
-        if all(np.linalg.norm(coord - np.array(fc)) >= min_dist for fc in filtered_coords):
-            filtered_coords.append(coord)
-            if len(filtered_coords) >= max_corners:
-                break
-
-    return np.array(filtered_coords)
+    return filtered_coords
 
 # Example usage
 if __name__ == "__main__":
@@ -142,13 +132,14 @@ if __name__ == "__main__":
     # Add arguments
     parser.add_argument('-img_in', '--input_image', type=str, required=True, help='Path to the input image file')
     parser.add_argument('-img_out', '--output_image', action='store_true', required=False, help='Save output files')
-    parser.add_argument('-mc', '--max_corners', type=int, default=25, required=False, help='Maximum number of corners to detect (default: 25)')
+    parser.add_argument('-mc', '--max_corners', type=int, default=250, required=False, help='Maximum number of corners to detect (default: 25)')
     parser.add_argument('-ks', '--kernel_size', type=int, choices=[3, 5, 7], default=3, required=False, help='Size of the Sobel kernel (3, 5, or 7, default: 3)')
     parser.add_argument('-m', '--method', type=str, choices=['cv2', 'numpy'], default='cv2', required=False, help='Sobel operator to use (default: cv2)')
     parser.add_argument('-gs', '--gaussian_sigma', type=int, default=0, required=False, help='Sigma value for gaussian blur kernel')
-    parser.add_argument('-s', '--shi_tomasi_sensitivity', type=float, default=0.04, required=False, help='Sensitivity for corner detection (default: 0.04)')
+    parser.add_argument('-s', '--shi_tomasi_sensitivity', type=float, default=0.05, required=False, help='Sensitivity for corner detection (default: 0.04)')
     parser.add_argument('-md', '--minimum_distance', type=int, default=10, required=False, help='Minumum distance between detected corners (used for removing oversample corners)')
     parser.add_argument('-debug', '--debug', action='store_true', required=False, default=False, help='Enable debugging print statements')
+    parser.add_argument('-debug_images', '--debug_images', action='store_true', required=False, default=False, help='Enable debugging image showing')
 
     # Parse the arguments
     args = parser.parse_args()
@@ -167,6 +158,9 @@ if __name__ == "__main__":
 
     # Load image as grayscale
     img = cv2.imread(args.input_image, cv2.IMREAD_GRAYSCALE)
+    img = histogram_equalization(img)
+    img = cv2.pyrDown(img)
+
 
     # Call the Shi-Tomasi corner detection function
     corners = shi_tomasi_corners(
@@ -178,32 +172,29 @@ if __name__ == "__main__":
         sigma0=args.gaussian_sigma,
         min_dist=args.minimum_distance,
         debug=args.debug,
+        show_image=args.debug_images
     )
 
     # Copy Image then draw corners on the BGR converted
     result_img = img.copy()
     result_img_bgr = cv2.cvtColor(result_img, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
-
-    for (y, x) in corners:
-        cv2.circle(result_img_bgr, (x, y), 10, (0, 255, 0), -1)  # Draw red circles
+    result_img_bgr = draw_corner_markers(result_img_bgr, corners, (0, 255, 0))
         
-    # Implement shi-tomasi corners from scratch
-    corners_cv2 = cv2.goodFeaturesToTrack(img, args.max_corners, args.shi_tomasi_sensitivity, args.minimum_distance)
+        
+    # Implement shi-tomasi corners from with cv2.goodFeaturesToTrack
+    corners_cv2 = cv2.goodFeaturesToTrack(image=img, maxCorners=args.max_corners, qualityLevel=args.shi_tomasi_sensitivity, minDistance=args.minimum_distance, blockSize=args.kernel_size)
+    corners_cv2 = np.array([(int(corner[0][1]), int(corner[0][0])) for corner in corners_cv2])
+    corners_cv2 = coordinate_density(corners_cv2, args.minimum_distance, args.max_corners)
+    
     # Copy Image then draw corners on the BGR converted
     result_img2 = img.copy()
     result_img_bgr2 = cv2.cvtColor(result_img2, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
-    
-    corners2 = []
-    for corner in corners_cv2:
-        (x, y) = corner[0]
-        cv2.circle(result_img_bgr2, (int(x), int(y)), 10, (255, 0, 0), -1)  # Draw red circles
-        if args.debug:
-            corners2.append((int(y), int(x)))
+    result_img_bgr2 = draw_corner_markers(result_img_bgr2, corners_cv2, (255, 0, 0))
 
     # Print corners if the flag is set
     if args.debug:
         debug_messages(f"Detected corners: \n{corners}")
-        debug_messages(f"Detected corners2: \n{np.array(corners2)}")
+        debug_messages(f"Detected corners2: \n{np.array(corners_cv2)}")
 
     # Display and save the image with corners
     plt.figure(figsize=(12, 8))

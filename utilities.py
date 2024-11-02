@@ -1,5 +1,6 @@
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio as psnr
+import cv2
 
 def error_metrics(image1, image2):
     """
@@ -49,5 +50,25 @@ def error_metrics(image1, image2):
     # Return the mean percent absolute error and PSNR value
     return np.mean(percent_error), psnr_value
 
+def draw_corner_markers(img, corners, color):
+    
+    for (y, x) in corners:
+        cv2.circle(img, (x, y), 5, color, -1)  # Draw red circles
+    return img
 
-# def plot_corners(coords)
+def debug_messages(message):
+    print(f"\n<< DEBUG >>\n")
+    print(message)
+    print("\n<< DEBUG >>\n")
+    
+    
+def coordinate_density(coords, min_dist, max_corners):
+    # Enforce minimum distance constraint
+    filtered_coords = []
+    for coord in coords:
+        if all(np.linalg.norm(coord - np.array(fc)) >= min_dist for fc in filtered_coords):
+            filtered_coords.append(coord)
+            if len(filtered_coords) >= max_corners:
+                break
+
+    return np.array(filtered_coords)
