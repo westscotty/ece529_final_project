@@ -7,7 +7,7 @@ from copy import copy
 import argparse
 from sobel_operator import sobel_operator_cv2, sobel_operator_numpy
 from gaussian_blur import gaussian_blur_cv2, gaussian_blur_numpy
-from utilities import error_metrics, draw_corner_markers, debug_messages, coordinate_density
+from utilities import error_metrics, draw_corner_markers, debug_messages, coordinate_density, make_comparison_image
 from image_operations import high_pass_filter, gaussian_low_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
 
@@ -35,22 +35,16 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
         test_Ix2, test_Iy2 = sobel_operators['numpy'](gray, 3)
         mae_Ix, pnsr_Ix = error_metrics(test_Ix1, test_Ix2)
         mae_Iy, pnsr_Iy = error_metrics(test_Iy1, test_Iy2)
-        debug_messages(f"""\
+        debug_messages(f"""
+            Sobel Operators:
             MAE Ix: {mae_Ix:.5f}
             MAE Iy: {mae_Iy:.5f}
             PNSR Ix: {pnsr_Ix:.5f}
             PNSR Iy: {pnsr_Iy:.5f}
             """)
         
-        plt.figure(figsize=(12, 6))
-        plt.subplot(1, 2, 1)
-        plt.title('Sobel Ix Delta')
-        plt.imshow(test_Ix1-test_Ix2, cmap='gray')
-        
-        plt.subplot(1, 2, 2)
-        plt.title('Sobel Iy Delta')
-        plt.imshow(test_Iy1-test_Iy2, cmap='gray')
         if show_image:
+            make_comparison_image([test_Ix1-test_Ix2, test_Iy1-test_Iy2], ['Sobel Ix Delta', 'Sobel Iy Delta'], "Sobel Deltas")
             plt.show()
         
     # Compute elements of the covariance matrix
@@ -69,6 +63,7 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
     Ixx, Iyy, Ixy, sigma = gaussian_blur[method](Ixx0, Iyy0, Ixy0, ksize, sigma0)
     if sigma != sigma0 and debug:
         print(f"Calculated new sigma value: {sigma:.5f}")
+        
     if debug:
         test_Ixx1, test_Iyy1, test_Ixy1, sigma1 = gaussian_blur['cv2'](Ixx0, Iyy0, Ixy0, 3, 0)
         test_Ixx2, test_Iyy2, test_Ixy2, sigma2 = gaussian_blur['numpy'](Ixx0, Iyy0, Ixy0, 3, 0)
@@ -76,6 +71,7 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
         mae_Iyy, pnsr_Iyy = error_metrics(test_Iyy1, test_Iyy2)
         mae_Ixy, pnsr_Ixy = error_metrics(test_Ixy1, test_Ixy2)
         debug_messages(f"""
+            Guassian Blur Kernels:
             MAE Ixx: {mae_Ixx:.5f}
             MAE Iyy: {mae_Iyy:.5f}
             MAE Ixy: {mae_Ixy:.5f}
@@ -85,19 +81,8 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
             Sigmas: {sigma1}, {sigma2}
             """)
         
-        plt.figure(figsize=(12, 6))
-        plt.subplot(1, 3, 1)
-        plt.title('Sobel Ix Delta')
-        plt.imshow(test_Ixx1-test_Ixx2, cmap='gray')
-        
-        plt.subplot(1, 3, 2)
-        plt.title('Sobel Iy Delta')
-        plt.imshow(test_Iyy1-test_Iyy2, cmap='gray')
-
-        plt.subplot(1, 3, 3)
-        plt.title('Sobel Iy Delta')
-        plt.imshow(test_Ixy1-test_Ixy2, cmap='gray')
         if show_image:
+            make_comparison_image([test_Ixx1-test_Ixx2, test_Iyy1-test_Iyy2, test_Ixy1-test_Ixy2], ['Gaussian Ixx Delta', 'Gaussian Iyy Delta', 'Gaussian Ixy Delta'], "Gaussian Deltas")
             plt.show()
 
         
@@ -192,21 +177,12 @@ if __name__ == "__main__":
     result_img_bgr2 = draw_corner_markers(result_img_bgr2, corners_cv2, (255, 0, 0))
 
     # Print corners if the flag is set
-    if args.debug:
-        debug_messages(f"Detected corners: \n{corners}")
-        debug_messages(f"Detected corners2: \n{np.array(corners_cv2)}")
+    if args.debug and args.debug_images:
+        debug_messages(f"Detected corners: \n{list(corners)}")
+        debug_messages(f"Detected corners2: \n{list(corners_cv2)}")
 
     # Display and save the image with corners
-    plt.figure(figsize=(12, 8))
-    plt.suptitle(f"Shi-Tomasi Corners")
-    plt.axis('off')
-    plt.subplot(1, 2, 1)
-    plt.title('Shi-tomasi Corners from Scratch')
-    plt.imshow(result_img_bgr, cmap='gray')
-
-    plt.subplot(1, 2, 2)
-    plt.title('Shi-tomasi Corners from OpenCV')
-    plt.imshow(result_img_bgr2, cmap='gray')
+    make_comparison_image([result_img_bgr, result_img_bgr2], ['Shi-tomasi Corners from Scratch', 'Shi-tomasi Corners from OpenCV'], "Shi-Tomasi Corners")
     
     if args.output_image:
         plt.savefig(output_image)

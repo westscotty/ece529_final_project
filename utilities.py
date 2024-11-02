@@ -1,6 +1,7 @@
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio as psnr
 import cv2
+import matplotlib.pyplot as plt
 
 def error_metrics(image1, image2):
     """
@@ -57,9 +58,9 @@ def draw_corner_markers(img, corners, color):
     return img
 
 def debug_messages(message):
-    print(f"\n<< DEBUG >>\n")
+    print(f"\n<< DEBUG >>")
     print(message)
-    print("\n<< DEBUG >>\n")
+    print("<< DEBUG >>\n")
     
     
 def coordinate_density(coords, min_dist, max_corners):
@@ -72,3 +73,15 @@ def coordinate_density(coords, min_dist, max_corners):
                 break
 
     return np.array(filtered_coords)
+
+def make_comparison_image(images, titles, suptitle):
+    
+    # Display and save the image with corners
+    n = len(images)
+    plt.figure(figsize=(12, 8))
+    plt.suptitle(suptitle)
+    for i, image in enumerate(images):
+        plt.axis('off')
+        plt.subplot(1, n, i+1)
+        plt.title(titles[i])
+        plt.imshow(images[i], cmap='gray')
