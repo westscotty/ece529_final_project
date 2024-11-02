@@ -1,8 +1,54 @@
-import numpy as np
 import cv2
-from tqdm import tqdm
+import numpy as np
+import sys
 from numba import jit
 
+normalize_image = lambda x : cv2.normalize(x, None, 0, 255, cv2.NORM_MINMAX)
+
+def create_sobel_operator(ksize):
+    """Creates the needed sobel convolutional kernel based in input ksize."""
+    
+    if ksize == 3:
+        sobel_x = np.array([[-1, 0, 1],
+                            [-2, 0, 2],
+                            [-1, 0, 1]], dtype=np.float32)
+
+        sobel_y = np.array([[1, 2, 1],
+                            [0, 0, 0],
+                            [-1, -2, -1]], dtype=np.float32)
+
+    elif ksize == 5:
+        sobel_x = np.array([[-2, -1, 0, 1, 2],
+                            [-4, -2, 0, 2, 4],
+                            [-8, -4, 0, 4, 8],
+                            [-4, -2, 0, 2, 4],
+                            [-2, -1, 0, 1, 2]], dtype=np.float32)
+
+        sobel_y = np.array([[2, 4, 8, 4, 2],
+                            [1, 2, 4, 2, 1],
+                            [0, 0, 0, 0, 0],
+                            [-1, -2, -4, -2, -1],
+                            [-2, -4, -8, -4, -2]], dtype=np.float32)
+
+    elif ksize == 7:
+        sobel_x = np.array([[-3, -2, -1, 0, 1, 2, 3],
+                            [-6, -5, -4, 0, 4, 5, 6],
+                            [-12, -10, -8, 0, 8, 10, 12],
+                            [-6, -5, -4, 0, 4, 5, 6],
+                            [-3, -2, -1, 0, 1, 2, 3]], dtype=np.float32)
+
+        sobel_y = np.array([[3, 6, 12, 6, 3, 0, 0],
+                            [2, 5, 10, 5, 2, 0, 0],
+                            [1, 4, 8, 4, 1, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0],
+                            [-1, -4, -8, -4, -1, 0, 0],
+                            [-2, -5, -10, -5, -2, 0, 0],
+                            [-3, -6, -12, -6, -3, 0, 0]], dtype=np.float32)
+
+    else:
+        sys.exit("Only sizes 3, 5, and 7 are supported.")
+
+    return sobel_x, sobel_y
 
 @jit(nopython=True)
 def apply_convolution(image, kernel):
@@ -37,79 +83,43 @@ def apply_convolution(image, kernel):
     
     return convolved_image
 
-def sobel_operator(image):
-    """Applies Sobel operator to compute image gradients Ix and Iy."""
-    # Sobel kernels
-    sobel_x = np.array([[-1, 0, 1],
-                        [-2, 0, 2],
-                        [-1, 0, 1]], dtype=np.float32)
+def normalize_image2(image):
+    """Normalize an image to the range [0, 255]."""
+    # Ensure the input is a float32 array
+    image = image.astype(np.float32)
+
+    # Find the minimum and maximum pixel values
+    min_val = np.min(image)
+    max_val = np.max(image)
+
+    # Scale the image to the range [0, 255]
+    normalized_image = (image - min_val) / (max_val - min_val) * 255.0
+
+    # Clip to ensure no values exceed the range
+    normalized_image = np.clip(normalized_image, 0, 255)
+
+    return normalized_image.astype(np.uint8)  # Convert back to uint8
+
+def sobel_operator_numpy(array, ksize):
+    """Applies Sobel operator to compute image gradients Ix and Iy using numpy routine."""
     
-    sobel_y = np.array([[-1, -2, -1],
-                        [ 0,  0,  0],
-                        [ 1,  2,  1]], dtype=np.float32)
+    # Sobel kernels
+    sobel_x, sobel_y = create_sobel_operator(ksize)
+    
+    image_norm = normalize_image(array)
 
     # Apply convolution using the Sobel X and Y kernels
-    Ix = apply_convolution(image, sobel_x)
-    Iy = apply_convolution(image, sobel_y)
-    
+    Ix = apply_convolution(image_norm, sobel_x)
+    Iy = apply_convolution(image_norm, sobel_y)
+
     return Ix, Iy
 
-def process_video(input_video_path, output_video_path, frame_rate=30, window_size_inches=(10, 7), dpi=100):
-    # Open the input video file
-    cap = cv2.VideoCapture(input_video_path)
-    if not cap.isOpened():
-        print(f"Error: Unable to open video file at {input_video_path}")
-        return
+def sobel_operator_cv2(array, ksize):
+    """Applies Sobel operator to compute image gradients Ix and Iy using cv2 routine."""
     
-    # Get video properties
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    # Calculate the desired output video dimensions in pixels based on window size in inches and DPI
-    window_width_pixels = int(window_size_inches[0] * dpi)
-    window_height_pixels = int(window_size_inches[1] * dpi)
-
-    # Calculate scaling factors to fit the window size while maintaining aspect ratio
-    scale_factor = min(window_width_pixels / (2 * frame_width), window_height_pixels / frame_height)
-    scaled_width = int(frame_width * scale_factor)
-    scaled_height = int(frame_height * scale_factor)
-
-    # Setup the VideoWriter to save the side-by-side video (grayscale output)
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(output_video_path, fourcc, frame_rate, (scaled_width * 2, scaled_height), isColor=False)
-
-    # Process frames with a progress bar
-    print(f"Processing video: {input_video_path}")
-    for _ in tqdm(range(total_frames), desc="Processing video", unit="frame"):
-        ret, frame = cap.read()
-        if not ret:
-            break  # No more frames to process
-
-        # Convert the original frame to grayscale
-        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # Apply Sobel operator to grayscale frame (example processing)
-        sobel_x = cv2.Sobel(gray_frame, cv2.CV_64F, 1, 0, ksize=3)
-        sobel_y = cv2.Sobel(gray_frame, cv2.CV_64F, 0, 1, ksize=3)
-        sobel = np.sqrt(sobel_x**2 + sobel_y**2)
-        sobel = cv2.convertScaleAbs(sobel)
-
-        # Concatenate the original grayscale and processed frames side by side (no conversion to BGR)
-        concatenated_frame = cv2.hconcat([gray_frame, sobel])
-
-        # Resize the concatenated frame to fit within the specified window size
-        resized_frame = cv2.resize(concatenated_frame, (scaled_width * 2, scaled_height))
-
-        # Write the resized concatenated grayscale frame to the output video
-        out.write(resized_frame)
-
-    # Release the resources
-    cap.release()
-    out.release()
-    print(f"Video saved successfully as {output_video_path}.")
-
-
-# video_file = 'data/videos/drone_following_model_plane.mp4'
-video_file = 'data/videos/helicopter2.mp4'
-process_video(video_file, f"{video_file.split('.')[0]}_output.mp4")
+    image_norm = normalize_image(array)
+    
+    Ix = cv2.Sobel(image_norm, cv2.CV_64F, 1, 0, ksize=ksize)
+    Iy = cv2.Sobel(image_norm, cv2.CV_64F, 0, 1, ksize=ksize)
+    
+    return Ix, Iy

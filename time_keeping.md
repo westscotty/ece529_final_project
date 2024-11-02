@@ -16,6 +16,7 @@
 - **2024-10-08**: Played with cv2 library using built in commands for corner detection on an image (2 hours)
 - **2024-10-10**: Committed testing scripts to git (0.5 hour)
 - **2024-10-21**: Created detailed plan of work and time keeping log (3 hours)
+- **2024-11-01**: Corner detection algorithm development (shi-tomasi corners) ( hours)
 
 
 ## Testing

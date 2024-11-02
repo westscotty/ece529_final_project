@@ -1,4 +1,5 @@
 *.mp4
-out/*
+*/out/*
 archive/*
 __pycache__/*
+test_results/*
