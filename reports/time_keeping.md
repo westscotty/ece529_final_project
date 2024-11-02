@@ -16,8 +16,13 @@
 - **2024-10-08**: Played with cv2 library using built in commands for corner detection on an image (2 hours)
 - **2024-10-10**: Committed testing scripts to git (0.5 hour)
 - **2024-10-21**: Created detailed plan of work and time keeping log (3 hours)
-- **2024-11-01**: Corner detection algorithm development (shi-tomasi corners) (6.5 hours)
+- **2024-11-01**: Corner detection algorithm development (shi-tomasi corners) (12.5 hours)
   - Developed shi-tomasi code for both numpy and cv2 implementiations, including error checking code
+  - Added plotting to show difference between home grown solution for corner detection vs openCV module
+  - Added k-means clustering method for grouping detected points for the purpose of drawing bounding boxes
+  - Added several basic image transformations including high/low pass filters, and histogram equalization
+  - Added code for drawing uniform plots
+  - Added debugging code for evaluating metrics between image operations during intermediate steps
 
 
 ## Testing
