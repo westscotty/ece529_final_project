@@ -3,3 +3,6 @@
 archive/*
 *__pycache__/*
 test_results/*
+data/extracted_frames/*
+!data/extracted_frames/blue_angels_formation/*
+!data/extracted_frames/boat_video2/*
