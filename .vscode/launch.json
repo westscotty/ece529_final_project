@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "args": ["-img_in", "data/extracted_frames/blue_angels_formation/frame_150.png", "-img_out"]
         }
     ]
 }

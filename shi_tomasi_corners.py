@@ -3,10 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
+from copy import copy
 import argparse
 from sobel_operator import sobel_operator_cv2, sobel_operator_numpy
 from gaussian_blur import gaussian_blur_cv2, gaussian_blur_numpy
-from error_checking import error_metrics
+from utilities import error_metrics
 from tqdm import tqdm
 
 sobel_operators = { 'cv2': sobel_operator_cv2,
@@ -20,7 +21,7 @@ def debug_messages(message):
     print(message)
     print("\n<< DEBUG >>\n")
 
-def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0.04, sigma0=0, debug=False):
+def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
     
     # Ensure the input is already in float format for processing
     gray = np.float32(img)
@@ -52,7 +53,8 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
         plt.subplot(1, 2, 2)
         plt.title('Sobel Iy Delta')
         plt.imshow(test_Iy1-test_Iy2, cmap='gray')
-        plt.show()
+        if show_image:
+            plt.show()
         
     # Compute elements of the covariance matrix
     # Ixx: Represents the gradient squared in the x-direction, emphasizing how the intensity changes horizontally.
@@ -68,8 +70,8 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
     # The kernel size for the Gaussian blur is determined by ksize, which is the same as that used for the Sobel operator. 
     # The smoothing ensures that the corner response is more robust by averaging local intensity variations.
     Ixx, Iyy, Ixy, sigma = gaussian_blur[method](Ixx0, Iyy0, Ixy0, ksize, sigma0)
-    if sigma != sigma0:
-        print(f"Calculated new sigma value: {sigma}")
+    if sigma != sigma0 and debug:
+        print(f"Calculated new sigma value: {sigma:.5f}")
     if debug:
         test_Ixx1, test_Iyy1, test_Ixy1, sigma1 = gaussian_blur['cv2'](Ixx0, Iyy0, Ixy0, 3, 0)
         test_Ixx2, test_Iyy2, test_Ixy2, sigma2 = gaussian_blur['numpy'](Ixx0, Iyy0, Ixy0, 3, 0)
@@ -98,7 +100,9 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
         plt.subplot(1, 3, 3)
         plt.title('Sobel Iy Delta')
         plt.imshow(test_Ixy1-test_Ixy2, cmap='gray')
-        plt.show()
+        if show_image:
+            plt.show()
+
         
     # Compute the minimum eigenvalue (Shi-Tomasi score) for each pixel
     # det_M: This computes the determinant of the covariance matrix 𝑀
@@ -118,16 +122,16 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
 
     # Convert flat indices back to 2D coordinates
     coords = np.array(np.unravel_index(top_indices, response.shape)).T
+    
+    # Enforce minimum distance constraint
+    filtered_coords = []
+    for coord in coords:
+        if all(np.linalg.norm(coord - np.array(fc)) >= min_dist for fc in filtered_coords):
+            filtered_coords.append(coord)
+            if len(filtered_coords) >= max_corners:
+                break
 
-    # Copy Image then draw corners on the BGR converted
-    result_img = img.copy()
-    result_img_bgr = cv2.cvtColor(result_img, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
-
-    for (y, x) in coords:
-        cv2.circle(result_img_bgr, (x, y), 10, (75, 180, 0), -1)  # Draw red circles
-
-    return result_img_bgr, coords  # Return the colored image and coordinates
-
+    return np.array(filtered_coords)
 
 # Example usage
 if __name__ == "__main__":
@@ -137,12 +141,13 @@ if __name__ == "__main__":
 
     # Add arguments
     parser.add_argument('-img_in', '--input_image', type=str, required=True, help='Path to the input image file')
-    parser.add_argument('-img_out', '--output_image', type=str, required=False, default=None, help='Path to the output image file')
+    parser.add_argument('-img_out', '--output_image', action='store_true', required=False, help='Save output files')
     parser.add_argument('-mc', '--max_corners', type=int, default=25, required=False, help='Maximum number of corners to detect (default: 25)')
     parser.add_argument('-ks', '--kernel_size', type=int, choices=[3, 5, 7], default=3, required=False, help='Size of the Sobel kernel (3, 5, or 7, default: 3)')
     parser.add_argument('-m', '--method', type=str, choices=['cv2', 'numpy'], default='cv2', required=False, help='Sobel operator to use (default: cv2)')
     parser.add_argument('-gs', '--gaussian_sigma', type=int, default=0, required=False, help='Sigma value for gaussian blur kernel')
-    parser.add_argument('-s', '--shi_tomasi_sensitivty', type=float, default=0.04, required=False, help='Sensitivity for corner detection (default: 0.04)')
+    parser.add_argument('-s', '--shi_tomasi_sensitivity', type=float, default=0.04, required=False, help='Sensitivity for corner detection (default: 0.04)')
+    parser.add_argument('-md', '--minimum_distance', type=int, default=10, required=False, help='Minumum distance between detected corners (used for removing oversample corners)')
     parser.add_argument('-debug', '--debug', action='store_true', required=False, default=False, help='Enable debugging print statements')
 
     # Parse the arguments
@@ -154,35 +159,67 @@ if __name__ == "__main__":
     
     # Ensure the output directory exists
     if args.output_image:
-        if not os.path.isdir(os.path.dirname(args.output_file)):
-            os.makedirs(os.path.dirname(args.output_file))
+        output_image = copy(args.input_image)
+        output_image = output_image.split('/')[1:]
+        output_image = os.path.join('test_results', *output_image)
+        if not os.path.isdir(os.path.dirname(output_image)):
+            os.makedirs(os.path.dirname(output_image))
 
     # Load image as grayscale
     img = cv2.imread(args.input_image, cv2.IMREAD_GRAYSCALE)
 
     # Call the Shi-Tomasi corner detection function
-    result, corners = shi_tomasi_corners(
+    corners = shi_tomasi_corners(
         img=img,
         ksize=args.kernel_size,
         max_corners=args.max_corners,
         method=args.method,
-        sensitivity=args.shi_tomasi_sensitivty,
+        sensitivity=args.shi_tomasi_sensitivity,
         sigma0=args.gaussian_sigma,
-        debug=args.debug
+        min_dist=args.minimum_distance,
+        debug=args.debug,
     )
+
+    # Copy Image then draw corners on the BGR converted
+    result_img = img.copy()
+    result_img_bgr = cv2.cvtColor(result_img, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
+
+    for (y, x) in corners:
+        cv2.circle(result_img_bgr, (x, y), 10, (0, 255, 0), -1)  # Draw red circles
+        
+    # Implement shi-tomasi corners from scratch
+    corners_cv2 = cv2.goodFeaturesToTrack(img, args.max_corners, args.shi_tomasi_sensitivity, args.minimum_distance)
+    # Copy Image then draw corners on the BGR converted
+    result_img2 = img.copy()
+    result_img_bgr2 = cv2.cvtColor(result_img2, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
+    
+    corners2 = []
+    for corner in corners_cv2:
+        (x, y) = corner[0]
+        cv2.circle(result_img_bgr2, (int(x), int(y)), 10, (255, 0, 0), -1)  # Draw red circles
+        if args.debug:
+            corners2.append((int(y), int(x)))
 
     # Print corners if the flag is set
     if args.debug:
         debug_messages(f"Detected corners: \n{corners}")
+        debug_messages(f"Detected corners2: \n{np.array(corners2)}")
 
     # Display and save the image with corners
     plt.figure(figsize=(12, 8))
-    plt.title(f"Shi-Tomasi Corners")
+    plt.suptitle(f"Shi-Tomasi Corners")
     plt.axis('off')
+    plt.subplot(1, 2, 1)
+    plt.title('Shi-tomasi Corners from Scratch')
+    plt.imshow(result_img_bgr, cmap='gray')
+
+    plt.subplot(1, 2, 2)
+    plt.title('Shi-tomasi Corners from OpenCV')
+    plt.imshow(result_img_bgr2, cmap='gray')
+    
     if args.output_image:
-        plt.imsave(args.output_file, result)
+        plt.savefig(output_image)
         
     if not args.debug:
         # Display image to screen
-        plt.imshow(result)
         plt.show()

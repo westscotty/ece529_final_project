@@ -49,3 +49,5 @@ def error_metrics(image1, image2):
     # Return the mean percent absolute error and PSNR value
     return np.mean(percent_error), psnr_value
 
+
+# def plot_corners(coords)
