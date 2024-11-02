@@ -7,7 +7,7 @@ from copy import copy
 import argparse
 from sobel_operator import sobel_operator_cv2, sobel_operator_numpy
 from gaussian_blur import gaussian_blur_cv2, gaussian_blur_numpy
-from utilities import error_metrics, draw_corner_markers, debug_messages, coordinate_density, make_comparison_image
+from utilities import error_metrics, draw_corner_markers, debug_messages, coordinate_density, make_comparison_image, make_bounding_boxes, add_bounding_boxes_to_image, make_bounding_boxes_from_groups, group_nearby_corners, group_corners_nearest_neighbors, cluster_corners, draw_clusters_on_image
 from image_operations import high_pass_filter, gaussian_low_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
 
@@ -18,7 +18,10 @@ gaussian_blur   = { 'cv2': gaussian_blur_cv2,
                     'numpy': gaussian_blur_numpy
                   }
 
-def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
+def shi_tomasi_corners(img, img_dims, max_corners=25, ksize=3, method='cv2', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
+    
+    # Calculate image dimensions
+    height, width = img_dims
     
     # Ensure the input is already in float format for processing
     gray = np.float32(img)
@@ -95,7 +98,7 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
     # The subtraction of 0.04×trace_M^2 helps adjust the sensitivity of corner detection, ensuring that the corners detected are of high quality.
     det_M = Ixx * Iyy - (Ixy ** 2)
     trace_M = Ixx + Iyy
-    response = det_M - sensitivity * (trace_M ** 2)
+    response = det_M - (sensitivity * (trace_M ** 2))
 
     # Flatten the response matrix and get top N corners
     # The indices of the highest values are sorted to determine the locations of the strongest corners
@@ -104,7 +107,7 @@ def shi_tomasi_corners(img, max_corners=25, ksize=3, method='cv2', sensitivity=0
 
     # Convert flat indices back to 2D coordinates
     coords = np.array(np.unravel_index(top_indices, response.shape)).T
-    filtered_coords = coordinate_density(coords, min_dist, max_corners)
+    filtered_coords = coordinate_density(coords, min_dist, max_corners, height, width)
     
     return filtered_coords
 
@@ -117,11 +120,11 @@ if __name__ == "__main__":
     # Add arguments
     parser.add_argument('-img_in', '--input_image', type=str, required=True, help='Path to the input image file')
     parser.add_argument('-img_out', '--output_image', action='store_true', required=False, help='Save output files')
-    parser.add_argument('-mc', '--max_corners', type=int, default=250, required=False, help='Maximum number of corners to detect (default: 25)')
+    parser.add_argument('-mc', '--max_corners', type=int, default=200, required=False, help='Maximum number of corners to detect (default: 25)')
     parser.add_argument('-ks', '--kernel_size', type=int, choices=[3, 5, 7], default=3, required=False, help='Size of the Sobel kernel (3, 5, or 7, default: 3)')
     parser.add_argument('-m', '--method', type=str, choices=['cv2', 'numpy'], default='cv2', required=False, help='Sobel operator to use (default: cv2)')
     parser.add_argument('-gs', '--gaussian_sigma', type=int, default=0, required=False, help='Sigma value for gaussian blur kernel')
-    parser.add_argument('-s', '--shi_tomasi_sensitivity', type=float, default=0.05, required=False, help='Sensitivity for corner detection (default: 0.04)')
+    parser.add_argument('-s', '--shi_tomasi_sensitivity', type=float, default=0.04, required=False, help='Sensitivity for corner detection (default: 0.04)')
     parser.add_argument('-md', '--minimum_distance', type=int, default=10, required=False, help='Minumum distance between detected corners (used for removing oversample corners)')
     parser.add_argument('-debug', '--debug', action='store_true', required=False, default=False, help='Enable debugging print statements')
     parser.add_argument('-debug_images', '--debug_images', action='store_true', required=False, default=False, help='Enable debugging image showing')
@@ -144,12 +147,14 @@ if __name__ == "__main__":
     # Load image as grayscale
     img = cv2.imread(args.input_image, cv2.IMREAD_GRAYSCALE)
     img = histogram_equalization(img)
-    img = cv2.pyrDown(img)
+    height, width = img.shape
+    # img = cv2.pyrDown(img)
 
 
     # Call the Shi-Tomasi corner detection function
     corners = shi_tomasi_corners(
         img=img,
+        img_dims=img.shape,
         ksize=args.kernel_size,
         max_corners=args.max_corners,
         method=args.method,
@@ -169,7 +174,7 @@ if __name__ == "__main__":
     # Implement shi-tomasi corners from with cv2.goodFeaturesToTrack
     corners_cv2 = cv2.goodFeaturesToTrack(image=img, maxCorners=args.max_corners, qualityLevel=args.shi_tomasi_sensitivity, minDistance=args.minimum_distance, blockSize=args.kernel_size)
     corners_cv2 = np.array([(int(corner[0][1]), int(corner[0][0])) for corner in corners_cv2])
-    corners_cv2 = coordinate_density(corners_cv2, args.minimum_distance, args.max_corners)
+    corners_cv2 = coordinate_density(corners_cv2, args.minimum_distance, args.max_corners, height, width)
     
     # Copy Image then draw corners on the BGR converted
     result_img2 = img.copy()
@@ -180,6 +185,20 @@ if __name__ == "__main__":
     if args.debug and args.debug_images:
         debug_messages(f"Detected corners: \n{list(corners)}")
         debug_messages(f"Detected corners2: \n{list(corners_cv2)}")
+       
+    
+    # corner_groups =  group_nearby_corners(corners, 50)
+    # bboxes = make_bounding_boxes_from_groups(corner_groups, result_img_bgr)
+    # result_img_bgr = add_bounding_boxes_to_image(result_img_bgr, bboxes, color=(0, 255, 0))
+    
+    # corner_groups_nn =  group_corners_nearest_neighbors(corners, 60)
+    # bboxes_nn = make_bounding_boxes_from_groups(corner_groups_nn, result_img_bgr)
+    # result_img_bgr = add_bounding_boxes_to_image(result_img_bgr, bboxes_nn, color=(0, 0, 255))
+    
+    corner_groups =  cluster_corners(corners, n_clusters=5)
+    result_img_bgr = draw_clusters_on_image(result_img_bgr, corner_groups)
+    # bboxes = make_bounding_boxes_from_groups(corner_groups, result_img_bgr)
+    # result_img_bgr = add_bounding_boxes_to_image(result_img_bgr, bboxes, color=(0, 255, 0))
 
     # Display and save the image with corners
     make_comparison_image([result_img_bgr, result_img_bgr2], ['Shi-tomasi Corners from Scratch', 'Shi-tomasi Corners from OpenCV'], "Shi-Tomasi Corners")

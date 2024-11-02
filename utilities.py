@@ -2,6 +2,8 @@ import numpy as np
 from skimage.metrics import peak_signal_noise_ratio as psnr
 import cv2
 import matplotlib.pyplot as plt
+from scipy.spatial import KDTree
+from sklearn.cluster import KMeans
 
 def error_metrics(image1, image2):
     """
@@ -63,7 +65,7 @@ def debug_messages(message):
     print("<< DEBUG >>\n")
     
     
-def coordinate_density(coords, min_dist, max_corners):
+def coordinate_density(coords, min_dist, max_corners, image_height, image_width, image_edge_threshold=10):
     # Enforce minimum distance constraint
     filtered_coords = []
     for coord in coords:
@@ -71,8 +73,16 @@ def coordinate_density(coords, min_dist, max_corners):
             filtered_coords.append(coord)
             if len(filtered_coords) >= max_corners:
                 break
+    
+    final_corners = []    
+    for coord in filtered_coords:
+        x, y = coord
+        # Check if the point is not within the threshold of the edges
+        if (x > image_edge_threshold and x < (image_width - image_edge_threshold) and
+            y > image_edge_threshold and y < (image_width - image_edge_threshold)):
+            final_corners.append(coord)
 
-    return np.array(filtered_coords)
+    return np.array(final_corners)
 
 def make_comparison_image(images, titles, suptitle):
     
@@ -85,3 +95,190 @@ def make_comparison_image(images, titles, suptitle):
         plt.subplot(1, n, i+1)
         plt.title(titles[i])
         plt.imshow(images[i], cmap='gray')
+        
+        
+def make_bounding_boxes(corners, image):
+
+    # Generate bounding boxes based on suppressed corners and the thresholded image
+    bounding_boxes = []
+    for (y, x) in corners:
+        # Define a small box around each corner
+        box_size = 10  # Adjust size as needed
+        min_x = max(0, x - box_size)
+        min_y = max(0, y - box_size)
+        max_x = min(image.shape[1], x + box_size)
+        max_y = min(image.shape[0], y + box_size)
+        bounding_boxes.append((min_x, min_y, max_x, max_y))
+
+    return bounding_boxes
+
+def add_bounding_boxes_to_image(image, bounding_boxes, color=(0, 255, 0)):
+    
+    for box in bounding_boxes:
+        cv2.rectangle(image, (box[0], box[1]), (box[2], box[3]), color, 2)
+        
+    return image
+
+def group_nearby_corners(corners, distance_threshold=15):
+    """
+    Groups corners that are within the specified distance threshold.
+    
+    Args:
+        corners (list): A list of (x, y) tuples representing corner coordinates.
+        distance_threshold (float): The maximum distance for corners to be considered part of the same group.
+        
+    Returns:
+        list: A list of lists, where each inner list contains grouped corner coordinates.
+    """
+    groups = []  # List to hold the groups of corners
+    visited = set()  # Set to keep track of visited corners
+    
+    for i, corner in enumerate(corners):
+        if i in visited:
+            continue  # Skip if this corner has already been grouped
+        
+        # Start a new group with the current corner
+        group = [corner]
+        visited.add(i)
+        
+        # Check against all other corners
+        for j, other_corner in enumerate(corners):
+            if j in visited:
+                continue  # Skip already visited corners
+            # Calculate the distance between corners
+            distance = np.linalg.norm(np.array(corner) - np.array(other_corner))
+            if distance <= distance_threshold:
+                group.append(other_corner)  # Add to current group
+                visited.add(j)  # Mark this corner as visited
+        
+        groups.append(group)  # Add the completed group to the list of groups
+    
+    return groups
+
+def group_corners_nearest_neighbors(corners, max_distance):
+    """
+    Group corners using nearest neighbor search.
+    
+    Args:
+        corners (list): A list of corner coordinates.
+        max_distance (float): The maximum distance for grouping corners.
+        
+    Returns:
+        list: A list of groups of corner coordinates.
+    """
+    # Convert the list of corners to a NumPy array for KDTree
+    corner_array = np.array(corners)
+    
+    # Build a KDTree for efficient nearest neighbor search
+    tree = KDTree(corner_array)
+    
+    # To keep track of which corners have been grouped
+    groups = []
+    visited = set()
+    
+    for i, corner in enumerate(corners):
+        if i in visited:
+            continue
+        
+        # Find all neighbors within max_distance
+        indices = tree.query_ball_point(corner, max_distance)
+        group = [corner_array[j] for j in indices]
+        
+        # Mark these corners as visited
+        visited.update(indices)
+        
+        # Append the group of corners
+        groups.append(group)
+        
+    return groups
+
+def cluster_corners(corners, n_clusters):
+    """
+    Cluster corners into a specified number of groups using K-Means.
+    
+    Args:
+        corners (list): A list of corner coordinates.
+        n_clusters (int): The number of clusters to form.
+        
+    Returns:
+        list: A list of groups of corner coordinates.
+    """
+    # Convert the list of corners to a NumPy array
+    corner_array = np.array(corners)
+
+    # Apply K-Means clustering
+    kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+    kmeans.fit(corner_array)
+
+    # Get the labels (cluster assignments) and cluster centers
+    labels = kmeans.labels_
+
+    # Group corners based on cluster labels
+    grouped = [[] for _ in range(n_clusters)]
+    for idx, label in enumerate(labels):
+        grouped[label].append(corner_array[idx])
+
+    return grouped
+
+# Visualization Function
+def draw_clusters_on_image(image, corner_groups):
+    """
+    Draw clusters of corners and their bounding boxes on the image.
+    
+    Args:
+        image (numpy array): The image to draw on.
+        corner_groups (list): List of groups of corner coordinates.
+        
+    Returns:
+        numpy array: The image with clusters drawn.
+    """
+    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]  # Add more colors as needed
+    
+    for i, group in enumerate(corner_groups):
+        # Get the coordinates for the bounding box
+        if len(group) > 0:
+            x_coords = [corner[1] for corner in group]
+            y_coords = [corner[0] for corner in group]
+            min_x, min_y = int(min(x_coords)), int(min(y_coords))
+            max_x, max_y = int(max(x_coords)), int(max(y_coords))
+            # Draw the bounding box with a unique color for each cluster
+            color = colors[i % len(colors)]
+            cv2.rectangle(image, (min_x, min_y), (max_x, max_y), color, 2)
+
+    return image
+
+def make_bounding_boxes_from_groups(corner_groups, image):
+    """
+    Generate bounding boxes for groups of corners.
+    
+    Args:
+        corner_groups (list): A list of lists of grouped corner coordinates.
+        image (numpy array): The image to which the bounding boxes will be applied.
+        
+    Returns:
+        list: A list of bounding boxes defined by (min_x, min_y, max_x, max_y).
+    """
+    bounding_boxes = []
+    
+    for group in corner_groups:
+        # Check if the group is not empty
+        if len(group) == 0:
+            continue  # Skip empty groups
+
+        # Extract x and y coordinates from the group of corners
+        x_coords = [corner[1] for corner in group]
+        y_coords = [corner[0] for corner in group]
+        
+        # Calculate the bounding box coordinates
+        min_x = max(0, min(x_coords))
+        min_y = max(0, min(y_coords))
+        max_x = min(image.shape[1], max(x_coords))
+        max_y = min(image.shape[0], max(y_coords))
+        
+        # Add the bounding box to the list
+        bounding_boxes.append((min_x, min_y, max_x, max_y))
+
+        # Debug output
+        print(f"Group: {group}, Bounding Box: ({min_x}, {min_y}, {max_x}, {max_y})")
+
+    return bounding_boxes
