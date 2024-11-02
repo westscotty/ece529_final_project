@@ -27,12 +27,12 @@ def save_frames(input_video_path, output_image_dir="extracted_frames"):
             break  # Stop if no more frames
 
         # Save every 50th frame as a PNG
-        if frame_id % 50 == 0:
-            image_path = os.path.join(output_image_dir, f"frame_{frame_id}.png")
-            if cv2.imwrite(image_path, frame):
-                print(f"Saved {image_path}")
-            else:
-                print(f"Error saving frame {frame_id} to {image_path}")
+        # if frame_id % 50 == 0:
+        image_path = os.path.join(output_image_dir, f"frame_{frame_id}.png")
+        if cv2.imwrite(image_path, frame):
+            print(f"Saved {image_path}")
+        else:
+            print(f"Error saving frame {frame_id} to {image_path}")
 
         frame_id += 1  # Increment the frame counter
 
@@ -41,6 +41,6 @@ def save_frames(input_video_path, output_image_dir="extracted_frames"):
     print(f"Finished extracting frames. Total frames processed: {frame_id}. Frames saved: {frame_id // 50}.")
 
 # Example usage
-video_file = '../data/videos/helicopter2.mp4'
-new_image_dir = f'../data/extracted_frames/{os.path.basename(video_file).rsplit(".", 1)[0]}'
+video_file = '../data/videos/blue_angels_formation.mp4'
+new_image_dir = f'../data/full_frame_video_images/{os.path.basename(video_file).rsplit(".", 1)[0]}'
 save_frames(video_file, output_image_dir=new_image_dir)

@@ -56,7 +56,12 @@ def error_metrics(image1, image2):
 def draw_corner_markers(img, corners, color):
     
     for (y, x) in corners:
-        cv2.circle(img, (x, y), 5, color, -1)  # Draw red circles
+        cv2.circle(img, (x, y), 5, color, -1)
+    return img
+
+def draw_lines(img, corner1, corner2, color):
+    
+    cv2.line(img, corner1, corner2, color, 2)
     return img
 
 def debug_messages(message):
@@ -65,7 +70,7 @@ def debug_messages(message):
     print("<< DEBUG >>\n")
     
     
-def coordinate_density(coords, min_dist, max_corners, image_height, image_width, image_edge_threshold=10):
+def coordinate_density_filter(coords, min_dist, max_corners, image_height, image_width, image_edge_threshold=5):
     # Enforce minimum distance constraint
     filtered_coords = []
     for coord in coords:
@@ -74,15 +79,17 @@ def coordinate_density(coords, min_dist, max_corners, image_height, image_width,
             if len(filtered_coords) >= max_corners:
                 break
     
+    # filtered_coords = coords
     final_corners = []    
     for coord in filtered_coords:
-        x, y = coord
+        y, x = coord
         # Check if the point is not within the threshold of the edges
         if (x > image_edge_threshold and x < (image_width - image_edge_threshold) and
-            y > image_edge_threshold and y < (image_width - image_edge_threshold)):
+            y > image_edge_threshold and y < (image_height - image_edge_threshold)):
             final_corners.append(coord)
-
+    # final_corners = filtered_coords
     return np.array(final_corners)
+
 
 def make_comparison_image(images, titles, suptitle):
     
@@ -115,7 +122,9 @@ def make_bounding_boxes(corners, image):
 def add_bounding_boxes_to_image(image, bounding_boxes, color=(0, 255, 0)):
     
     for box in bounding_boxes:
-        cv2.rectangle(image, (box[0], box[1]), (box[2], box[3]), color, 2)
+        pt1 = (int(box[0]), int(box[1]))
+        pt2 = (int(box[2]), int(box[3]))
+        cv2.rectangle(image, pt1, pt2, color, 2)
         
     return image
 
@@ -279,6 +288,6 @@ def make_bounding_boxes_from_groups(corner_groups, image):
         bounding_boxes.append((min_x, min_y, max_x, max_y))
 
         # Debug output
-        print(f"Group: {group}, Bounding Box: ({min_x}, {min_y}, {max_x}, {max_y})")
+        # print(f"Group: {group}, Bounding Box: ({min_x}, {min_y}, {max_x}, {max_y})")
 
     return bounding_boxes
