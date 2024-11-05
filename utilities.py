@@ -4,6 +4,7 @@ import cv2
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from sklearn.cluster import KMeans
+from numba import jit
 
 def error_metrics(image1, image2):
     """
@@ -56,7 +57,7 @@ def error_metrics(image1, image2):
 def draw_corner_markers(img, corners, color):
     
     for (y, x) in corners:
-        cv2.circle(img, (x, y), 5, color, -1)
+        cv2.circle(img, (x, y), 3, color, -1)
     return img
 
 def draw_lines(img, corner1, corner2, color):
@@ -177,7 +178,7 @@ def group_corners_nearest_neighbors(corners, max_distance):
     """
     # Convert the list of corners to a NumPy array for KDTree
     corner_array = np.array(corners)
-    
+
     # Build a KDTree for efficient nearest neighbor search
     tree = KDTree(corner_array)
     
@@ -214,7 +215,7 @@ def cluster_corners(corners, n_clusters):
     """
     # Convert the list of corners to a NumPy array
     corner_array = np.array(corners)
-
+    breakpoint()
     # Apply K-Means clustering
     kmeans = KMeans(n_clusters=n_clusters, random_state=0)
     kmeans.fit(corner_array)

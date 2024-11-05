@@ -24,6 +24,8 @@
   - Added code for drawing uniform plots
   - Added debugging code for evaluating metrics between image operations during intermediate steps
 
+- **2024-11-02**: Polished the shi-tomasi method a little more, and took a stab at implementing the optical flow portion of the lucas-kanade algorithm (4.5 hours)
+- **2024-11-04**: Devloped further the lucas-kanade method (openCV portion) and generated a video utilities file to use for generic functin calls. Ready to convert to implementing the lucas-kanade alg from scratch now that the wrapper for the results is flushed out. (3.75 hours)
 
 ## Testing
 - **2024-##-##**: TODO

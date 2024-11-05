@@ -41,6 +41,6 @@ def save_frames(input_video_path, output_image_dir="extracted_frames"):
     print(f"Finished extracting frames. Total frames processed: {frame_id}. Frames saved: {frame_id // 50}.")
 
 # Example usage
-video_file = '../data/videos/blue_angels_formation.mp4'
+video_file = '../data/videos/plane_blue_sky.mp4'
 new_image_dir = f'../data/full_frame_video_images/{os.path.basename(video_file).rsplit(".", 1)[0]}'
 save_frames(video_file, output_image_dir=new_image_dir)

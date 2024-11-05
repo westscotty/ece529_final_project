@@ -18,10 +18,12 @@ gaussian_blur   = { 'cv2': gaussian_blur_cv2,
                     'numpy': gaussian_blur_numpy
                   }
 
-def shi_tomasi_corners(img, img_dims, max_corners=200, ksize=3, method='cv2', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
+def shi_tomasi_corners(img, max_corners=200, ksize=3, method='cv2', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
+    
+    # Get image info
     
     # Calculate image dimensions
-    height, width = img_dims
+    height, width = img.shape
     
     # Ensure the input is already in float format for processing
     gray = np.float32(img)
@@ -159,7 +161,6 @@ if __name__ == "__main__":
     # Call the Shi-Tomasi corner detection function
     corners, corners_cv2 = shi_tomasi_corners(
         img=img,
-        img_dims=img.shape,
         ksize=args.kernel_size,
         max_corners=args.max_corners,
         method=args.method,
