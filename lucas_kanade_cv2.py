@@ -54,8 +54,10 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30
                 err_mask = err_valid.flatten() < err_thresh
 
                 # Final filtering
-                good_new = good_new[err_mask].squeeze()
-                good_old = good_old[err_mask].squeeze()
+                good_new = good_new[err_mask]
+                good_new = good_new.reshape(len(good_new), 2)
+                good_old = good_old[err_mask]
+                good_old = good_old.reshape(len(good_old), 2)
                 
                 ## Draw the tracks on the color frame
                 for i, (new, old) in enumerate(zip(good_new, good_old)):
