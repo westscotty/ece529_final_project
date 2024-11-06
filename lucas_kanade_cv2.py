@@ -7,6 +7,81 @@ import video_utils as vid
 from copy import copy
 import argparse
 
+import numpy as np
+import cv2
+
+def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, winSize=(15, 15), maxLevel=3, criteria=(None, 10, 0.03)):
+    __, max_iter, epsilon = criteria
+    points_curr = np.copy(points_prev)  # Initial flow starts as the initial points
+    st = np.ones(len(points_prev), dtype=np.uint8)  # Status array
+    err = np.zeros(len(points_prev), dtype=np.float32)  # Error array
+
+    # Generate pyramids for prev_img and curr_img
+    pyramid_prev = [prev_img]
+    pyramid_curr = [curr_img]
+    for i in range(1, maxLevel + 1):
+        pyramid_prev.append(cv2.pyrDown(pyramid_prev[i - 1]))
+        pyramid_curr.append(cv2.pyrDown(pyramid_curr[i - 1]))
+
+    # Start from the top of the pyramid (smallest scale)
+    scale_factor = 2 ** maxLevel
+    for level in range(maxLevel, -1, -1):
+        # Scale down points for current pyramid level
+        points_prev_scaled = points_prev / scale_factor
+        points_curr_scaled = points_curr / scale_factor
+
+        half_w, half_h = winSize[0] // 2, winSize[1] // 2
+
+        for i, point in enumerate(points_prev_scaled):
+            x, y = int(point[0][0]), int(point[0][1])
+            prev_patch = pyramid_prev[level][y - half_h:y + half_h + 1, x - half_w:x + half_w + 1]
+            curr_patch = pyramid_curr[level][y - half_h:y + half_h + 1, x - half_w:x + half_w + 1]
+
+            if prev_patch.shape == winSize and curr_patch.shape == winSize:
+                Ix = cv2.Sobel(prev_patch, cv2.CV_64F, 1, 0, ksize=3)
+                Iy = cv2.Sobel(prev_patch, cv2.CV_64F, 0, 1, ksize=3)
+                It = curr_patch.astype(np.float32) - prev_patch.astype(np.float32)
+
+                Ixx = Ix ** 2
+                Iyy = Iy ** 2
+                Ixy = Ix * Iy
+                Ixt = Ix * It
+                Iyt = Iy * It
+
+                A = np.array([[Ixx.sum(), Ixy.sum()], [Ixy.sum(), Iyy.sum()]])
+                b = -np.array([Ixt.sum(), Iyt.sum()])
+
+                flow = np.zeros(2)
+                for _ in range(max_iter):
+                    if np.linalg.det(A) > 1e-5:
+                        new_flow = np.linalg.solve(A, b)
+                        if np.linalg.norm(new_flow - flow) < epsilon:
+                            break
+                        flow = new_flow
+                    else:
+                        st[i] = 0  # Tracking failed
+                        flow = np.zeros(2)
+                        break
+
+                # Apply incremental flow to scaled point location
+                points_curr_scaled[i][0][0] += flow[0]
+                points_curr_scaled[i][0][1] += flow[1]
+                err[i] = np.abs(It).mean()
+
+        # Scale `points_curr_scaled` back up and accumulate into `points_curr`
+        points_curr += (points_curr_scaled * scale_factor - points_curr) / scale_factor
+        scale_factor //= 2
+
+    points_curr = np.array(points_curr, dtype=np.float32)
+    st = st.reshape(-1, 1)
+    err = err.reshape(-1, 1)
+    
+    points_curr_cv2, st_cv2, err_cv2 = cv2.calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, None, **lk_params)
+
+    return points_curr, st, err, points_curr_cv2, st_cv2, err_cv2
+
+
+
 def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30, pyrdown=True, lk_params=None, feature_params=None, reinit_threshold=50, err_thresh=0.7):
     
     print(f"Kanade-Lucas-Tomasi Feature Tracker")
@@ -37,7 +112,8 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30
 
         ## Check if there are points to track
         if points_prev is not None and len(points_prev) > reinit_threshold:
-            points_curr, st, err = cv2.calcOpticalFlowPyrLK(gray_first_frame, gray_frame, points_prev, None, **lk_params)
+            # 
+            points_curr, st, err, points_curr_cv2, st_cv2, err_cv2 = calcOpticalFlowPyrLK(gray_first_frame, gray_frame, points_prev, **lk_params)
             
             if points_curr is not None and st is not None:
                 # good_new = points_curr[st==1]
