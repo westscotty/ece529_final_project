@@ -1,0 +1,18 @@
+- Add histogram equalization 
+- add image sharpening
+- add image blurring
+#- add max suppression like routine to filter out points that are too close to other points
+- add bounding box drawer
+- low pass filter?
+- high pass filter?
+- pyrdown function to scale images down to make faster
+
+
+- optical flow routine to do this on a video
+- kanade-lucas optical flow for tracking objects frame-by-frame
+- skip frame logic? (make it go faster)
+- 
+
+- mean shift alg?
+#- implement good_features_to_track
+

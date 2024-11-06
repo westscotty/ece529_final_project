@@ -1,3 +1,9 @@
 *.mp4
-out/*
+*/out/*
 archive/*
+*__pycache__/*
+test_results/*
+data/extracted_frames/*
+data/full_frame_video_images/*
+!data/extracted_frames/blue_angels_formation/*
+!data/extracted_frames/boat_video2/*
