@@ -37,14 +37,14 @@ def get_crop_info(width, height):
         
     return crop_size, crop_x_start, crop_y_start
 
-def prepare_output_video(video_path, frame_rate, crop_size):
+def prepare_output_video(video_path, frame_rate, crop_size, pyrdown_level):
     
     # Setup VideoWriter for the cropped output
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(video_path, fourcc, frame_rate, (crop_size // 2, crop_size // 2), isColor=True)
+    out = cv2.VideoWriter(video_path, fourcc, frame_rate, (crop_size // 2**pyrdown_level, crop_size // 2**pyrdown_level), isColor=True)
     return out
 
-def read_frame(cap, crop=False, crop_size=None, crop_x=None, crop_y=None, pyrdown=False):
+def read_frame(cap, crop=False, crop_size=None, crop_x=None, crop_y=None, pyrdown_level=1):
     
     ret, frame = cap.read()
     
@@ -54,9 +54,12 @@ def read_frame(cap, crop=False, crop_size=None, crop_x=None, crop_y=None, pyrdow
     if crop:
         frame = crop_frame(frame, crop_size, crop_x, crop_y)
      
-    if pyrdown:
-        frame = cv2.pyrDown(frame)
-        
+    tmp_frame = frame.copy()
+    if pyrdown_level > 0:
+        for i in range(pyrdown_level):
+            tmp_frame = cv2.pyrDown(tmp_frame)
+        frame = tmp_frame
+
     return frame
     
 def crop_frame(frame, crop_size, crop_x, crop_y):

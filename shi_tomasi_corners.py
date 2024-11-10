@@ -153,6 +153,7 @@ if __name__ == "__main__":
 
     # Load image as grayscale
     img = cv2.imread(args.input_image, cv2.IMREAD_GRAYSCALE)
+    img = cv2.pyrDown(img)
     # img = histogram_equalization(img)
     height, width = img.shape
     # img = cv2.pyrDown(img)

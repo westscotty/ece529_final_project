@@ -7,10 +7,21 @@ import video_utils as vid
 from copy import copy
 import argparse
 
-import numpy as np
-import cv2
+from sobel_operator import sobel_operator_cv2, sobel_operator_numpy
+from gaussian_blur import gaussian_blur_cv2, gaussian_blur_numpy
+from image_operations import high_pass_filter, gaussian_low_pass_filter, averaging_low_pass_filter, histogram_equalization
+from tqdm import tqdm
 
-def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, winSize=(15, 15), maxLevel=3, criteria=(None, 10, 0.03)):
+sobel_operators = { 'cv2': sobel_operator_cv2,
+                    'numpy': sobel_operator_numpy
+                  }
+gaussian_blur   = { 'cv2': gaussian_blur_cv2,
+                    'numpy': gaussian_blur_numpy
+                  }
+
+def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, lk_params=None, ksize=3, method='cv2'):
+
+    winSize, maxLevel, criteria = lk_params.values()
     __, max_iter, epsilon = criteria
     points_curr = np.copy(points_prev)  # Initial flow starts as the initial points
     st = np.ones(len(points_prev), dtype=np.uint8)  # Status array
@@ -38,8 +49,7 @@ def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, winSize=(15, 15), maxL
             curr_patch = pyramid_curr[level][y - half_h:y + half_h + 1, x - half_w:x + half_w + 1]
 
             if prev_patch.shape == winSize and curr_patch.shape == winSize:
-                Ix = cv2.Sobel(prev_patch, cv2.CV_64F, 1, 0, ksize=3)
-                Iy = cv2.Sobel(prev_patch, cv2.CV_64F, 0, 1, ksize=3)
+                Ix, Iy = sobel_operators[method](prev_patch, ksize=ksize)
                 It = curr_patch.astype(np.float32) - prev_patch.astype(np.float32)
 
                 Ixx = Ix ** 2
@@ -82,7 +92,7 @@ def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, winSize=(15, 15), maxL
 
 
 
-def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30, pyrdown=True, lk_params=None, feature_params=None, reinit_threshold=50, err_thresh=0.7):
+def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30, lk_params=None, feature_params=None, reinit_threshold=50, err_thresh=0.7, skip_frames=0, method='cv2', pyrdown_level=1):
     
     print(f"Kanade-Lucas-Tomasi Feature Tracker")
     print(f"Processing video: {input_video_path}\n")
@@ -90,10 +100,10 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30
     ## Load video, get grep info, setup output video
     cap, frame_width, frame_height, total_frames = vid.open_video(input_video_path)
     crop_size, crop_x, crop_y = vid.get_crop_info(frame_width, frame_height)
-    out_video = vid.prepare_output_video(output_video_path, frame_rate, crop_size)
+    out_video = vid.prepare_output_video(output_video_path, frame_rate, crop_size, pyrdown_level)
     
     ## Read first frame, crop, pyrdown, change to grayscale
-    first_frame = vid.read_frame(cap, True, crop_size, crop_x, crop_y, pyrdown)
+    first_frame = vid.read_frame(cap, True, crop_size, crop_x, crop_y, pyrdown_level)
     gray_first_frame = cv2.cvtColor(first_frame, cv2.COLOR_BGR2GRAY)
 
     ## Detect initial corners
@@ -105,20 +115,22 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30
     out_video.write(first_frame)
 
     ## Process each frame
-    for _ in tqdm(range(total_frames - 1), desc="Processing Frames", unit="frame"):
+    for i in tqdm(range(total_frames - 1), desc="Processing Frames", unit="frame"):
         
-        frame = vid.read_frame(cap, True, crop_size, crop_x, crop_y, pyrdown)
+        try:
+            if i % skip_frames == 1:
+                continue
+        except ZeroDivisionError as e:
+            if i == 0:
+                print("No frames skipped")
+        frame = vid.read_frame(cap, True, crop_size, crop_x, crop_y, pyrdown_level)
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         ## Check if there are points to track
         if points_prev is not None and len(points_prev) > reinit_threshold:
-            # 
-            points_curr, st, err, points_curr_cv2, st_cv2, err_cv2 = calcOpticalFlowPyrLK(gray_first_frame, gray_frame, points_prev, **lk_params)
+            points_curr, st, err, points_curr_cv2, st_cv2, err_cv2 = calcOpticalFlowPyrLK(gray_first_frame, gray_frame, points_prev, method=method, lk_params=lk_params)
             
-            if points_curr is not None and st is not None:
-                # good_new = points_curr[st==1]
-                # good_old = points_prev[st==1]
-                
+            if points_curr is not None and st is not None:                
                 valid_mask = st.flatten() == 1
                 
                 # Filter points based on the valid mask
@@ -190,19 +202,25 @@ if __name__ == "__main__":
     parser.add_argument('-rt', '--reinit_threshold', default=50, type=int, required=False, help='Threshold for reinitialization of corner detections.')
     parser.add_argument('-ws', '--window_size', default=5, type=int, required=False, help='Optical flow window size')
     parser.add_argument('-et', '--error_threshold', default=0.7, type=float, required=False, help='Error threshold for tracks being successful between frames')
+    parser.add_argument('-sf', '--skip_frames', default=0, type=int, required=False, help='Num frames to skip in between video processing')
+    parser.add_argument('-pl', '--pyrdown_level', default=1, type=int, required=False, help='Image pyramid donw function iterations')
+
 
     # Parse the arguments
     args = parser.parse_args()
     
     # Parameters for Shi-Tomasi corner detection and KLT tracking
     lk_params = dict(winSize=(args.window_size, args.window_size), maxLevel=3, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.01))
-    feature_params = dict(max_corners=args.max_corners, ksize=args.kernel_size, sensitivity=args.sensitivity, min_dist=args.minimum_distance)
+    feature_params = dict(max_corners=args.max_corners, ksize=args.kernel_size, sensitivity=args.sensitivity, min_dist=args.minimum_distance, method=args.method)
     
     # Example usage:
     video_file = 'data/videos/blue_angels_formation.mp4'
     output_video = f"{args.input_video.split('.')[0]}_output_klt.mp4"
-    lucas_kanade_optical_flow(args.input_video, output_video, frame_rate=args.frame_rate, lk_params=lk_params, feature_params=feature_params, reinit_threshold=args.reinit_threshold, err_thresh=args.error_threshold)
-    
-    # lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
-    # feature_params = dict(max_corners=1000, ksize=3, sensitivity=0.001, min_dist=5)
-    # reinit_threshold = 50
+    lucas_kanade_optical_flow(args.input_video, output_video, frame_rate=args.frame_rate, lk_params=lk_params, feature_params=feature_params, reinit_threshold=args.reinit_threshold, err_thresh=args.error_threshold, skip_frames=args.skip_frames, method=args.method, pyrdown_level=args.pyrdown_level)
+
+    #TODO
+    # Evalute performance
+    # Implement mean-shift algorithm
+    # comment code
+    # DOEs for kernel sizes, and additional image operations
+    # write report deatiling the algorithm design and code implementation

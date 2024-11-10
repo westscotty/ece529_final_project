@@ -26,7 +26,8 @@
 
 - **2024-11-02**: Polished the shi-tomasi method a little more, and took a stab at implementing the optical flow portion of the lucas-kanade algorithm (4.5 hours)
 - **2024-11-04**: Devloped further the lucas-kanade method (openCV portion) and generated a video utilities file to use for generic functin calls. Ready to convert to implementing the lucas-kanade alg from scratch now that the wrapper for the results is flushed out. (3.75 hours)
-- **2024-11-04**: Developed algorithm for calcOpticalFlowPyrLK method, using same inputs as the cv2 method. Now I have a fully functional custom klt alg and a cv2 implementation. Next steps are making the custom method run solely on numpy operators, as well as quantifying performance between it, and adding comments throughout to discuss the math behind each operation. (4.5 hours)
+- **2024-11-05**: Developed algorithm for calcOpticalFlowPyrLK method, using same inputs as the cv2 method. Now I have a fully functional custom klt alg and a cv2 implementation. Next steps are making the custom method run solely on numpy operators, as well as quantifying performance between it, and adding comments throughout to discuss the math behind each operation. (4.5 hours)
+- **2024-11-10**: Working on adding numpy versioning to the lucas-kanade algorithm (now fully numpy convolutions can be used) as well as added a frame skipping routine and a recursive pydown image operation to make the images smaller and therefore faster to calculate on (5 hours)
 
 ## Testing
 
