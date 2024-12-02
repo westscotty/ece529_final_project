@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 import shi_tomasi_corners as stc
-import utilities as utils
+import utils as utils
 import sys
 
 green = (0, 255, 0)
@@ -44,9 +44,10 @@ def prepare_output_video(video_path, frame_rate, crop_size, pyrdown_level):
     out = cv2.VideoWriter(video_path, fourcc, frame_rate, (crop_size // 2**pyrdown_level, crop_size // 2**pyrdown_level), isColor=True)
     return out
 
-def read_frame(cap, crop=False, crop_size=None, crop_x=None, crop_y=None, pyrdown_level=1):
+def read_frame(cap, crop=False, crop_size=None, crop_x=None, crop_y=None, pyrdown_level=1, start_frame=1):
     
-    ret, frame = cap.read()
+    for i in range(start_frame):
+        ret, frame = cap.read()
     
     if not ret:
         sys.exit(f"Error: Unable to read the first frame.")

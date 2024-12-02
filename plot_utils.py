@@ -5,8 +5,11 @@ from scipy.spatial import KDTree
 from sklearn.cluster import KMeans
 
 def draw_corner_markers(img, corners, color):
+    # if not type(corners) == type([]):
+    #     breakpoint()
     for (y, x) in corners:
-        cv2.circle(img, (x, y), 3, color, -1)
+        x, y = int(x), int(y)
+        cv2.circle(img, (x, y), 2, color, -1)
     return img
 
 def draw_lines(img, corner1, corner2, color):

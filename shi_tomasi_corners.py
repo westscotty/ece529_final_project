@@ -17,7 +17,7 @@ gaussian_low_pass   = { 'cv2': gaussian_low_pass_cv2,
                     'numpy': gaussian_low_pass_numpy
                   }
 
-def shi_tomasi_corners(img, max_corners=200, ksize=3, method='cv2', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
+def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
     
     # Get image info
     
@@ -121,7 +121,7 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='cv2', sensitivity=
     coords = np.array(np.unravel_index(top_indices, response.shape)).T
     filtered_coords = coordinate_density_filter(coords, min_dist, max_corners, height, width)
 
-    # Use CV2 implementation    
+    # Use CV2 implementation for comparison  
     coords_cv2 = cv2.goodFeaturesToTrack(image=img, maxCorners=max_corners, qualityLevel=sensitivity, minDistance=min_dist)
     coords_cv2 = np.array([(int(corner[0][1]), int(corner[0][0])) for corner in coords_cv2])
     filtered_coords_cv2 = coordinate_density_filter(coords_cv2, min_dist, max_corners, height, width)
