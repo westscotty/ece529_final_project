@@ -5,17 +5,15 @@ import os
 import sys
 from copy import copy
 import argparse
-from sobel_operator import sobel_operator_cv2, sobel_operator_numpy
-from gaussian_blur import gaussian_blur_cv2, gaussian_blur_numpy
 import utilities as utils
-from image_operations import high_pass_filter, gaussian_low_pass_filter, averaging_low_pass_filter, histogram_equalization
+from image_operations import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
 
-sobel_operators = { 'cv2': sobel_operator_cv2,
+gradient = { 'cv2': sobel_operator_cv2,
                     'numpy': sobel_operator_numpy
                   }
-gaussian_blur   = { 'cv2': gaussian_blur_cv2,
-                    'numpy': gaussian_blur_numpy
+gaussian_low_pass   = { 'cv2': gaussian_low_pass_cv2,
+                    'numpy': gaussian_low_pass_numpy
                   }
 
 def shi_tomasi_corners(img, max_corners=200, ksize=3, method='cv2', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
@@ -33,11 +31,14 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='cv2', sensitivity=
     # The gradients highlight areas of rapid intensity change, which are candidates for corners.
     # Done by alculating the derivative of the intensity function
     # Compute image gradients (Ix, Iy) using Sobel filters
-    Ix, Iy = sobel_operators[method](gray, ksize)
+    Ix = gradient[method](gray, ksize, 0)
+    Iy = gradient[method](gray, ksize, 1)
     
     if debug:
-        test_Ix1, test_Iy1 = sobel_operators['cv2'](gray, 3)
-        test_Ix2, test_Iy2 = sobel_operators['numpy'](gray, 3)
+        test_Ix1 = gradient['cv2'](gray, 3, 0)
+        test_Iy1 = gradient['cv2'](gray, 3, 1)
+        test_Ix2 = gradient['numpy'](gray, 3, 0)
+        test_Iy2 = gradient['numpy'](gray, 3, 1)
         mae_Ix, pnsr_Ix = utils.error_metrics(test_Ix1, test_Ix2)
         mae_Iy, pnsr_Iy = utils.error_metrics(test_Iy1, test_Iy2)
         utils.debug_messages(f"""
@@ -65,13 +66,19 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='cv2', sensitivity=
     # This step reduces noise and minor variations in the gradient images, allowing for more reliable corner detection. 
     # The kernel size for the Gaussian blur is determined by ksize, which is the same as that used for the Sobel operator. 
     # The smoothing ensures that the corner response is more robust by averaging local intensity variations.
-    Ixx, Iyy, Ixy, sigma = gaussian_blur[method](Ixx0, Iyy0, Ixy0, ksize, sigma0)
-    if sigma != sigma0 and debug:
-        print(f"Calculated new sigma value: {sigma:.5f}")
+    Ixx, sigma_xx = gaussian_low_pass[method](Ixx0, ksize, sigma0)
+    Iyy, sigma_yy = gaussian_low_pass[method](Iyy0, ksize, sigma0)
+    Ixy, sigma_xy = gaussian_low_pass[method](Ixy0, ksize, sigma0)
+    if debug:
+        utils.debug_messages(f"Sigmas (XX, YY, XY): {sigma_xx:.5f}, {sigma_yy:.5f}, {sigma_xy:.5f}")
         
     if debug:
-        test_Ixx1, test_Iyy1, test_Ixy1, sigma1 = gaussian_blur['cv2'](Ixx0, Iyy0, Ixy0, 3, 0)
-        test_Ixx2, test_Iyy2, test_Ixy2, sigma2 = gaussian_blur['numpy'](Ixx0, Iyy0, Ixy0, 3, 0)
+        test_Ixx1, sigma_xx1 = gaussian_low_pass['cv2'](Ixx0, 3, 0)
+        test_Iyy1, sigma_yy1 = gaussian_low_pass['cv2'](Iyy0, 3, 0)
+        test_Ixy1, sigma_xy1 = gaussian_low_pass['cv2'](Ixy0, 3, 0)
+        test_Ixx2, sigma_xx2 = gaussian_low_pass['numpy'](Ixx0, 3, 0)
+        test_Iyy2, sigma_yy2 = gaussian_low_pass['numpy'](Iyy0, 3, 0)
+        test_Ixy2, sigma_xy2 = gaussian_low_pass['numpy'](Ixy0, 3, 0)
         mae_Ixx, pnsr_Ixx = utils.error_metrics(test_Ixx1, test_Ixx2)
         mae_Iyy, pnsr_Iyy = utils.error_metrics(test_Iyy1, test_Iyy2)
         mae_Ixy, pnsr_Ixy = utils.error_metrics(test_Ixy1, test_Ixy2)
@@ -83,7 +90,9 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='cv2', sensitivity=
             PSNR Ixx: {pnsr_Ixx:.5f}
             PSNR Iyy: {pnsr_Iyy:.5f}
             PSNR Ixy: {pnsr_Ixy:.5f}
-            Sigmas: {sigma1}, {sigma2}
+            Sigmas XX: {sigma_xx1}, {sigma_xx2}
+            Sigmas YY: {sigma_yy1}, {sigma_yy2}
+            Sigmas XY: {sigma_xy1}, {sigma_xy2}
             """)
         
         if show_image:

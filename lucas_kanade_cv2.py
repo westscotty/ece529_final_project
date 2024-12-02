@@ -6,17 +6,14 @@ import utilities as utils
 import video_utils as vid
 from copy import copy
 import argparse
-
-from sobel_operator import sobel_operator_cv2, sobel_operator_numpy
-from gaussian_blur import gaussian_blur_cv2, gaussian_blur_numpy
-from image_operations import high_pass_filter, gaussian_low_pass_filter, averaging_low_pass_filter, histogram_equalization
+from image_operations import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
 
-sobel_operators = { 'cv2': sobel_operator_cv2,
+gradient = { 'cv2': sobel_operator_cv2,
                     'numpy': sobel_operator_numpy
                   }
-gaussian_blur   = { 'cv2': gaussian_blur_cv2,
-                    'numpy': gaussian_blur_numpy
+gaussian_low_pass   = { 'cv2': gaussian_low_pass_cv2,
+                    'numpy': gaussian_low_pass_numpy
                   }
 
 def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, lk_params=None, ksize=3, method='cv2'):
@@ -49,7 +46,8 @@ def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, lk_params=None, ksize=
             curr_patch = pyramid_curr[level][y - half_h:y + half_h + 1, x - half_w:x + half_w + 1]
 
             if prev_patch.shape == winSize and curr_patch.shape == winSize:
-                Ix, Iy = sobel_operators[method](prev_patch, ksize=ksize)
+                Ix = gradient[method](prev_patch, ksize=ksize, xy=0)
+                Iy = gradient[method](prev_patch, ksize=ksize, xy=1)
                 It = curr_patch.astype(np.float32) - prev_patch.astype(np.float32)
 
                 Ixx = Ix ** 2
@@ -215,7 +213,8 @@ if __name__ == "__main__":
     
     # Example usage:
     video_file = 'data/videos/blue_angels_formation.mp4'
-    output_video = f"{args.input_video.split('.')[0]}_output_klt.mp4"
+    # output_video = f"{args.input_video.split('.')[0]}_output_klt_20241002.mp4"
+    output_video = f"output.mp4"
     lucas_kanade_optical_flow(args.input_video, output_video, frame_rate=args.frame_rate, lk_params=lk_params, feature_params=feature_params, reinit_threshold=args.reinit_threshold, err_thresh=args.error_threshold, skip_frames=args.skip_frames, method=args.method, pyrdown_level=args.pyrdown_level)
 
     #TODO
@@ -223,4 +222,4 @@ if __name__ == "__main__":
     # Implement mean-shift algorithm
     # comment code
     # DOEs for kernel sizes, and additional image operations
-    # write report deatiling the algorithm design and code implementation
+    # write report detailing the algorithm design and code implementation
