@@ -30,6 +30,14 @@
 - **2024-11-04**: Devloped further the lucas-kanade method (openCV portion) and generated a video utilities file to use for generic functin calls. Ready to convert to implementing the lucas-kanade alg from scratch now that the wrapper for the results is flushed out. (4.75 hours)
 - **2024-11-05**: Developed algorithm for calcOpticalFlowPyrLK method, using same inputs as the cv2 method. Now I have a fully functional custom klt alg and a cv2 implementation. Next steps are making the custom method run solely on numpy operators, as well as quantifying performance between it, and adding comments throughout to discuss the math behind each operation. (7 hours)
 - **2024-11-10**: Working on adding numpy versioning to the lucas-kanade algorithm (now fully numpy convolutions can be used) as well as added a frame skipping routine and a recursive pydown image operation to make the images smaller and therefore faster to calculate on (5.5 hours)
+- **2024-12-02**: Updated code for all image operations to be more generic, only working with a single image at a time (2.5 hours)
+  - Started final report
+  - Developed testing metrics for cv2 implementation versus numpy implementation
+    - Split focus between corners, persisting corners, and corner location (number of corners over all)
+  - Developed testing metric plots
+  - Developed method for output images
+  - Developed DOE for evaluating performance overall
+  - ...
 
 ## Testing
 

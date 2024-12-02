@@ -2,7 +2,8 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 import shi_tomasi_corners as stc
-import utilities as utils
+from utils import debug_messages, error_metrics
+from plot_utils import make_comparison_image, draw_corner_markers, draw_lines, group_corners_nearest_neighbors, make_bounding_boxes_from_groups, add_bounding_boxes_to_image
 import video_utils as vid
 from copy import copy
 import argparse
@@ -89,7 +90,6 @@ def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, lk_params=None, ksize=
     return points_curr, st, err, points_curr_cv2, st_cv2, err_cv2
 
 
-
 def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30, lk_params=None, feature_params=None, reinit_threshold=50, err_thresh=0.7, skip_frames=0, method='cv2', pyrdown_level=1):
     
     print(f"Kanade-Lucas-Tomasi Feature Tracker")
@@ -109,7 +109,7 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30
     points_prev = vid.reshape_points(corners_0)
     
     ## Write first frame to output video
-    first_frame = utils.draw_corner_markers(first_frame, corners_0, vid.green)  # Green markers
+    first_frame = draw_corner_markers(first_frame, corners_0, vid.green)  # Green markers
     out_video.write(first_frame)
 
     ## Process each frame
@@ -149,14 +149,14 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30
                 for i, (new, old) in enumerate(zip(good_new, good_old)):
                     a, b = map(int, new.ravel())
                     c, d = map(int, old.ravel())
-                    frame = utils.draw_corner_markers(frame, [(a, b)], vid.green)  # Green markers
-                    frame = utils.draw_lines(frame, (b, a), (d, c), vid.blue)    # Blue lines
+                    frame = draw_corner_markers(frame, [(a, b)], vid.green)  # Green markers
+                    frame = draw_lines(frame, (b, a), (d, c), vid.blue)    # Blue lines
                     
                 ## Bounding box around clusters of points
                 if good_new.size > 0:
-                    corner_groups_nn = utils.group_corners_nearest_neighbors(good_new, 50)
-                    bboxes_nn = utils.make_bounding_boxes_from_groups(corner_groups_nn, frame)
-                    frame = utils.add_bounding_boxes_to_image(frame, bboxes_nn, vid.red)
+                    corner_groups_nn = group_corners_nearest_neighbors(good_new, 50)
+                    bboxes_nn = make_bounding_boxes_from_groups(corner_groups_nn, frame)
+                    frame = add_bounding_boxes_to_image(frame, bboxes_nn, vid.red)
 
                 ## Update points for the next frame
                 points_prev = good_new.reshape(-1, 1, 2)
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     parser.add_argument('-in_vid', '--input_video', type=str, required=True, help='Path to the input image file')
     parser.add_argument('-mc', '--max_corners', type=int, default=2000, required=False, help='Maximum number of corners to detect (default: 25)')
     parser.add_argument('-ks', '--kernel_size', type=int, choices=[3, 5, 7], default=3, required=False, help='Size of the Sobel kernel (3, 5, or 7, default: 3)')
-    parser.add_argument('-m', '--method', type=str, choices=['cv2', 'numpy'], default='cv2', required=False, help='Sobel operator to use (default: cv2)')
+    parser.add_argument('-m', '--method', type=str, choices=['cv2', 'numpy'], default='numpy', required=False, help='Sobel operator to use (default: numpy)')
     parser.add_argument('-gs', '--gaussian_sigma', type=int, default=0, required=False, help='Sigma value for gaussian blur kernel')
     parser.add_argument('-s', '--sensitivity', type=float, default=0.001, required=False, help='Sensitivity for corner detection (default: 0.04)')
     parser.add_argument('-md', '--minimum_distance', type=int, default=5, required=False, help='Minumum distance between detected corners (used for removing oversample corners)')

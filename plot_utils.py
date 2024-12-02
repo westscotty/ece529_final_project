@@ -1,96 +1,17 @@
 import numpy as np
-from skimage.metrics import peak_signal_noise_ratio as psnr
 import cv2
 import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from sklearn.cluster import KMeans
-from numba import jit
-
-def error_metrics(image1, image2):
-    """
-    Calculate the percent absolute error and PSNR between two images.
-    
-    Parameters:
-        image1 (np.ndarray): First image (e.g., Sobel output from NumPy).
-        image2 (np.ndarray): Second image (e.g., Sobel output from OpenCV).
-    
-    Returns:
-        float: The percent absolute error between the two images.
-        float: The PSNR value between the two images.
-    """
-    # Ensure the images have the same shape
-    if image1.shape != image2.shape:
-        raise ValueError("Images must have the same dimensions for error calculation.")
-
-    # Convert both images to float32 to ensure consistent data type
-    image1 = image1.astype(np.float32)
-    image2 = image2.astype(np.float32)
-
-    # Calculate the absolute error
-    absolute_error = np.abs(image1 - image2)
-
-    # Calculate percent absolute error
-    percent_error = (absolute_error / (np.abs(image2) + 1e-8)) * 100  # Add a small value to avoid division by zero
-    
-    # Calculate PSNR value
-    psnr_value = psnr(image1, image2, data_range=image2.max() - image2.min())
-    
-    # # Normalize Cross-correlation (NCC)
-    # Ix_cv2_flat = Ix_cv2.flatten()
-    # Ix_numpy_flat = Ix_numpy.flatten()
-    # cosine_similarity = np.dot(Ix_cv2_flat, Ix_numpy_flat) / (
-    # np.linalg.norm(Ix_cv2_flat) * np.linalg.norm(Ix_numpy_flat) + 1e-8)
-
-    # # Cosine similarity
-    # numerator = np.sum((Ix_cv2 - Ix_cv2.mean()) * (Ix_numpy - Ix_numpy.mean()))
-    # denominator = np.sqrt(np.sum((Ix_cv2 - Ix_cv2.mean())**2) * np.sum((Ix_numpy - Ix_numpy.mean())**2))
-    # ncc = numerator / (denominator + 1e-8)  # To avoid division by zero
-
-    # # Gradient direction similarity (GDS)
-    # angle_diff = np.arctan2(Iy_cv2, Ix_cv2) - np.arctan2(Iy_numpy, Ix_numpy)
-    # angle_diff = np.abs((angle_diff + np.pi) % (2 * np.pi) - np.pi)  # Normalize to [0, pi]
-    # gds = np.mean(angle_diff)
-
-    # Return the mean percent absolute error and PSNR value
-    return np.mean(percent_error), psnr_value
 
 def draw_corner_markers(img, corners, color):
-    
     for (y, x) in corners:
         cv2.circle(img, (x, y), 3, color, -1)
     return img
 
 def draw_lines(img, corner1, corner2, color):
-    
     cv2.line(img, corner1, corner2, color, 2)
     return img
-
-def debug_messages(message):
-    print(f"\n<< DEBUG >>")
-    print(message)
-    print("<< DEBUG >>\n")
-    
-    
-def coordinate_density_filter(coords, min_dist, max_corners, image_height, image_width, image_edge_threshold=5):
-    # Enforce minimum distance constraint
-    filtered_coords = []
-    for coord in coords:
-        if all(np.linalg.norm(coord - np.array(fc)) >= min_dist for fc in filtered_coords):
-            filtered_coords.append(coord)
-            if len(filtered_coords) >= max_corners:
-                break
-    
-    # filtered_coords = coords
-    final_corners = []    
-    for coord in filtered_coords:
-        y, x = coord
-        # Check if the point is not within the threshold of the edges
-        if (x > image_edge_threshold and x < (image_width - image_edge_threshold) and
-            y > image_edge_threshold and y < (image_height - image_edge_threshold)):
-            final_corners.append(coord)
-    # final_corners = filtered_coords
-    return np.array(final_corners)
-
 
 def make_comparison_image(images, titles, suptitle):
     
@@ -130,16 +51,8 @@ def add_bounding_boxes_to_image(image, bounding_boxes, color=(0, 255, 0)):
     return image
 
 def group_nearby_corners(corners, distance_threshold=15):
-    """
-    Groups corners that are within the specified distance threshold.
-    
-    Args:
-        corners (list): A list of (x, y) tuples representing corner coordinates.
-        distance_threshold (float): The maximum distance for corners to be considered part of the same group.
-        
-    Returns:
-        list: A list of lists, where each inner list contains grouped corner coordinates.
-    """
+    # Groups corners that are within the specified distance threshold.
+
     groups = []  # List to hold the groups of corners
     visited = set()  # Set to keep track of visited corners
     
@@ -166,16 +79,8 @@ def group_nearby_corners(corners, distance_threshold=15):
     return groups
 
 def group_corners_nearest_neighbors(corners, max_distance):
-    """
-    Group corners using nearest neighbor search.
-    
-    Args:
-        corners (list): A list of corner coordinates.
-        max_distance (float): The maximum distance for grouping corners.
-        
-    Returns:
-        list: A list of groups of corner coordinates.
-    """
+    # Group corners using nearest neighbor search.
+
     # Convert the list of corners to a NumPy array for KDTree
     corner_array = np.array(corners)
 
@@ -203,16 +108,8 @@ def group_corners_nearest_neighbors(corners, max_distance):
     return groups
 
 def cluster_corners(corners, n_clusters):
-    """
-    Cluster corners into a specified number of groups using K-Means.
-    
-    Args:
-        corners (list): A list of corner coordinates.
-        n_clusters (int): The number of clusters to form.
-        
-    Returns:
-        list: A list of groups of corner coordinates.
-    """
+    # Cluster corners into a specified number of groups using K-Means.
+
     # Convert the list of corners to a NumPy array
     corner_array = np.array(corners)
     breakpoint()
@@ -232,16 +129,8 @@ def cluster_corners(corners, n_clusters):
 
 # Visualization Function
 def draw_clusters_on_image(image, corner_groups):
-    """
-    Draw clusters of corners and their bounding boxes on the image.
+    # Draw clusters of corners and their bounding boxes on the image.
     
-    Args:
-        image (numpy array): The image to draw on.
-        corner_groups (list): List of groups of corner coordinates.
-        
-    Returns:
-        numpy array: The image with clusters drawn.
-    """
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]  # Add more colors as needed
     
     for i, group in enumerate(corner_groups):
@@ -258,16 +147,8 @@ def draw_clusters_on_image(image, corner_groups):
     return image
 
 def make_bounding_boxes_from_groups(corner_groups, image):
-    """
-    Generate bounding boxes for groups of corners.
+    # Generate bounding boxes for groups of corners.
     
-    Args:
-        corner_groups (list): A list of lists of grouped corner coordinates.
-        image (numpy array): The image to which the bounding boxes will be applied.
-        
-    Returns:
-        list: A list of bounding boxes defined by (min_x, min_y, max_x, max_y).
-    """
     bounding_boxes = []
     
     for group in corner_groups:
