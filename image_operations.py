@@ -53,6 +53,7 @@ def create_sobel_operator(ksize, xy):
     else:
         sys.exit("Only sizes 3, 5, and 7 are supported.")
 
+    # breakpoint()
     if xy == 0:
         return sobel_x
     else:
@@ -91,7 +92,7 @@ def apply_convolution(image, kernel):
     
     return convolved_image
 
-def sobel_operator_numpy(img, ksize, xy=0, scipy=False):
+def sobel_operator_numpy(img, ksize, xy=0, scipy=True):
     """Applies Sobel operator to compute image gradients Ix and Iy using numpy routine."""
     
     # Sobel kernels
@@ -116,7 +117,7 @@ def sobel_operator_cv2(img, ksize, xy = 0):
         x = 0
         y = 1
     
-    gradient_img = cv2.Sobel(image_norm, cv2.CV_64F, x, y, ksize=ksize)
+    gradient_img = cv2.Sobel(image_norm, cv2.CV_32F, x, y, ksize=ksize)
     
     return gradient_img
 

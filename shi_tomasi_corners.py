@@ -19,8 +19,6 @@ gaussian_low_pass   = { 'cv2': gaussian_low_pass_cv2,
 
 def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
     
-    # Get image info
-    
     # Calculate image dimensions
     height, width = img.shape
     
@@ -32,14 +30,14 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
     # The gradients highlight areas of rapid intensity change, which are candidates for corners.
     # Done by alculating the derivative of the intensity function
     # Compute image gradients (Ix, Iy) using Sobel filters
-    Ix = gradient[method](gray, ksize, 0)
-    Iy = gradient[method](gray, ksize, 1)
+    Ix = gradient[method](gray.copy(), ksize, 0)
+    Iy = gradient[method](gray.copy(), ksize, 1)
     
     if debug:
-        test_Ix1 = gradient['cv2'](gray, 3, 0)
-        test_Iy1 = gradient['cv2'](gray, 3, 1)
-        test_Ix2 = gradient['numpy'](gray, 3, 0)
-        test_Iy2 = gradient['numpy'](gray, 3, 1)
+        test_Ix1 = gradient['cv2'](gray.copy(), 3, 0)
+        test_Iy1 = gradient['cv2'](gray.copy(), 3, 1)
+        test_Ix2 = gradient['numpy'](gray.copy(), 3, 0)
+        test_Iy2 = gradient['numpy'](gray.copy(), 3, 1)
         mae_Ix, pnsr_Ix = error_metrics(test_Ix1, test_Ix2)
         mae_Iy, pnsr_Iy = error_metrics(test_Iy1, test_Iy2)
         debug_messages(f"""

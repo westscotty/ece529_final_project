@@ -176,3 +176,36 @@ def make_bounding_boxes_from_groups(corner_groups, image):
         # print(f"Group: {group}, Bounding Box: ({min_x}, {min_y}, {max_x}, {max_y})")
 
     return bounding_boxes
+
+def plot_stats(frames, stat1, stat2, yaxis="Y Axis", title="", output_file=""):
+    
+    plt.figure()
+    plt.plot(frames, stat1, color='red', label='Numpy')
+    plt.plot(frames, stat2, color='green', label='OpenCV')
+    plt.xlabel('Frame ID')
+    plt.ylabel(yaxis)
+    plt.yticks([0,1])
+    if title:
+        plt.title(title)
+    if output_file:
+        plt.savefig(output_file)
+    plt.legend()
+    plt.tight_layout()
+    plt.grid(visible=True)
+    plt.show()
+
+def plot_error(frames, error, yaxis="\%\ Error", title="", output_file=""):
+    
+    plt.figure()
+    plt.plot(frames, error, color='red', label='Numpy')
+    plt.xlabel('Frame ID')
+    plt.ylabel(yaxis)
+    plt.yticks([0,1])
+    if title:
+        plt.title(title)
+    if output_file:
+        plt.savefig(output_file)
+    plt.legend()
+    plt.tight_layout()
+    plt.grid(visible=True)
+    plt.show()

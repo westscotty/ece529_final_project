@@ -31,17 +31,10 @@ def coordinate_density_filter(coords, min_dist, max_corners, image_height, image
 
 
 def error_metrics(image1, image2):
-    """
-    Calculate the percent absolute error and PSNR between two images.
+    # Calculate the percent absolute error and PSNR between two images.
+    # returns --> float: The percent absolute error between the two images.
+    #v            float: The PSNR value between the two images.
     
-    Parameters:
-        image1 (np.ndarray): First image (e.g., Sobel output from NumPy).
-        image2 (np.ndarray): Second image (e.g., Sobel output from OpenCV).
-    
-    Returns:
-        float: The percent absolute error between the two images.
-        float: The PSNR value between the two images.
-    """
     # Ensure the images have the same shape
     if image1.shape != image2.shape:
         raise ValueError("Images must have the same dimensions for error calculation.")
@@ -57,7 +50,7 @@ def error_metrics(image1, image2):
     percent_error = (absolute_error / (np.abs(image2) + 1e-8)) * 100  # Add a small value to avoid division by zero
     
     # Calculate PSNR value
-    psnr_value = psnr(image1, image2, data_range=image2.max() - image2.min())
+    psnr_value = psnr(image1, image2, data_range=image1.max() - image1.min())
     
     # # Normalize Cross-correlation (NCC)
     # Ix_cv2_flat = Ix_cv2.flatten()
