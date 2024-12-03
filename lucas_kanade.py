@@ -4,12 +4,13 @@ import numpy as np
 from tqdm import tqdm
 import shi_tomasi_corners as stc
 from utils import debug_messages, error_metrics
-from plot_utils import make_comparison_image, draw_corner_markers, draw_lines, group_corners_nearest_neighbors, make_bounding_boxes_from_groups, add_bounding_boxes_to_image, plot_stats
+from plot_utils import make_comparison_image, draw_corner_markers, draw_lines, group_corners_nearest_neighbors, make_bounding_boxes_from_groups, add_bounding_boxes_to_image, plot_stats, write_image
 import video_utils as vid
 from copy import copy
 import argparse
 from image_operations import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
+import gc
 
 gradient = { 'cv2': sobel_operator_cv2,
                     'numpy': sobel_operator_numpy
@@ -154,14 +155,12 @@ def validate_points(points_prev_0, corners_0, points_curr, st, err, corners, poi
 
 
 # Function to perform optical flow tracking on a video
-def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30, lk_params=None, feature_params=None, reinit_threshold=50, err_thresh=0.75, start_frame=0, method='numpy', pyrdown_level=1, plots_dir=""):
-    
-    print(f"Kanade-Lucas-Tomasi Feature Tracker")
-    print(f"Processing video: {input_video_path}\n")
+def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_rate=30, lk_params=None, feature_params=None, reinit_threshold=50, err_thresh=0.75, start_frame=0, method='numpy', pyrdown_level=1, plots_dir="", save_samples=False):
 
     ## Load video, get grep info, setup output video
     cap, frame_width, frame_height, total_frames = vid.open_video(input_video_path)
     crop_size, crop_x, crop_y = vid.get_crop_info(frame_width, frame_height)
+
     out_video = vid.prepare_output_video(output_video_path, frame_rate, crop_size*2, pyrdown_level)
     
     ## Read first frame, crop, pyrdown, change to grayscale
@@ -185,6 +184,13 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30
     reinits = {'numpy': [1], 'cv2': [1]}  # Gather stats
     attempts = {'numpy': [0], 'cv2': [0]} # Gather stats
     stc_corners = {'numpy': [len(corners_0)], 'cv2': [len(corners_0_cv2)]}  # Gather stats
+    lk_good_corners = {'numpy': [len(corners_0)], 'cv2': [len(corners_0_cv2)]}  # Gather stats
+    stc_maes = []  # Gather stats
+    stc_psnrs = []  # Gather stats
+    lk_maes = []  # Gather stats
+    lk_psnrs = []  # Gather stats
+    
+    sample_count = 0
     
     ## Process each frame
     frames = (total_frames - start_frame) - 1
@@ -197,7 +203,13 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
         # calculate new corners each frame, only use if significant loss detected
-        corners, corners_cv2 = stc.shi_tomasi_corners(gray_frame, **feature_params)
+        if save_samples and sample_count < 1:
+            debug = True
+            debug_plots_dir = plots_dir
+        else:
+            debug = False
+            debug_plots_dir = None
+        corners, corners_cv2 = stc.shi_tomasi_corners(gray_frame, debug=debug, plots_dir=debug_plots_dir, **feature_params)
         stc_corners['cv2'].append(len(corners_cv2)) # Gather stats
         stc_corners['numpy'].append(len(corners)) # Gather stats
         points_prev = vid.reshape_points(corners)
@@ -234,7 +246,9 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30
             points_prev_0 = points_prev
             frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev_0), vid.red)
             reinit = 1
-        
+            
+        lk_good_corners['cv2'].append(len(points_prev_0_cv2))
+        lk_good_corners['numpy'].append(len(points_prev_0))
         reinits['cv2'].append(reinit_cv2)
         reinits['numpy'].append(reinit)
         attempts['cv2'].append(attempted_cv2)
@@ -246,15 +260,42 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path, frame_rate=30
         # bottom half is left: optical flow points caculated with numpy, right: cv2.calcOpticalFlowPyrLK
         bott_half = np.hstack((frame_bl, frame_br))
         out_video.write(np.vstack((top_half, bott_half)))
+        if save_samples and sample_count < 5:
+            write_image(np.vstack((top_half, bott_half)), f"Sample Image Frame {i}", f"{plots_dir}/sample_image_{i}.png")
+            sample_count += 1
+            
 
     # Release resources
     cap.release()
+
     out_video.release()
-    print(f"Video saved successfully as {output_video_path}.")
 
     # Plot stats
-    plot_stats(np.arange(0, frames+1), reinits['numpy'], reinits['cv2'], "Detect New Corners")
-    plot_stats(np.arange(0, frames+1), attempts['numpy'], attempts['cv2'], "Attempted Optical Flow")
+    output_file1 = ""
+    output_file2 = ""
+    output_file3 = ""
+    output_file4 = ""
+    output_file5 = ""
+    output_file6 = ""
+    output_file7 = ""
+    output_file8 = ""
+    if plots_dir:
+        output_file1 = f"{plots_dir}/reinits.png"
+        output_file2 = f"{plots_dir}/attempts.png"
+        output_file3 = f"{plots_dir}/stc_corners.png"
+        output_file4 = f"{plots_dir}/lk_good_corners.png"
+        output_file5 = f"{plots_dir}/stc_mae.png"
+        output_file6 = f"{plots_dir}/stc_psnr.png"
+        output_file7 = f"{plots_dir}/lk_mae.png"
+        output_file8 = f"{plots_dir}/lk_psnr.png"
+        
+    plot_stats(np.arange(0, frames+1), reinits['numpy'], reinits['cv2'], "Detect New Corners", output_file=output_file1, title="Reinitialized Corners")
+    plot_stats(np.arange(0, frames+1), attempts['numpy'], attempts['cv2'], "Attempted Optical Flow", output_file=output_file2, title="Attempts with Previous Frame's Corners")
+    plot_stats(np.arange(0, frames+1), stc_corners['numpy'], stc_corners['cv2'], "Number of Detected Corners", output_file=output_file3, title="Shi Tomasi Corners")
+    plot_stats(np.arange(0, frames+1), lk_good_corners['numpy'], lk_good_corners['cv2'], "Number of Good Corners", output_file=output_file4, title="Lucas Kanade Good Corners")
+    
+    gc.collect()
+    return reinits, attempts, stc_maes, stc_psnrs, lk_maes, lk_psnrs
 
 # Example usage
 if __name__ == "__main__":
@@ -277,14 +318,14 @@ if __name__ == "__main__":
     parser.add_argument('-ws', '--window_size', default=7, type=int, required=False, help='Optical flow window size')
     parser.add_argument('-et', '--error_threshold', default=0.8, type=float, required=False, help='Error threshold for tracks being successful between frames')
     parser.add_argument('-sf', '--start_frame', default=0, type=int, required=False, help='Num frames to skip in between video processing')
-    parser.add_argument('-pl', '--pyrdown_level', default=1, type=int, required=False, help='Image pyramid down function iterations')
+    parser.add_argument('-pl', '--pyrdown_level', default=3, type=int, required=False, help='Image pyramid down function iterations')
 
     # Parse the arguments
     args = parser.parse_args()
     np.random.seed(11001)
     
     # Parameters for Lucas-Kanade and Shi-Tomasi methods
-    lk_params = dict(winSize=(args.window_size, args.window_size), maxLevel=3, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.01))
+    lk_params = dict(winSize=(args.window_size, args.window_size), maxLevel=args.pyrdown_level, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.01))
     feature_params = dict(max_corners=args.max_corners, ksize=args.kernel_size, sensitivity=args.sensitivity, min_dist=args.minimum_distance, method=args.method, sigma0=args.gaussian_sigma, debug=args.debug, show_image=args.debug_images)
     # Example usage:
     video_file = 'data/videos/blue_angels_formation.mp4'
@@ -299,12 +340,10 @@ if __name__ == "__main__":
     plots_dir = os.path.dirname(output_video).replace('videos', 'plots')
     if not os.path.isdir(plots_dir):
         os.makedirs(plots_dir)
-        
-    lucas_kanade_optical_flow(args.input_video, output_video, frame_rate=args.frame_rate, lk_params=lk_params, feature_params=feature_params, reinit_threshold=args.reinit_threshold, err_thresh=args.error_threshold, start_frame=args.start_frame, method=args.method, pyrdown_level=args.pyrdown_level, plots_dir=plots_dir)
-
-    #TODO
-    # Evalute performance
-    # Implement mean-shift algorithm
-    # comment code
-    # DOEs for kernel sizes, and additional image operations
-    # write report detailing the algorithm design and code implementation
+    
+    print(f"Kanade-Lucas-Tomasi Feature Tracker")
+    print(f"Processing video: {args.input_video}\n")
+    
+    lucas_kanade_optical_flow(input_video_path=args.input_video, output_video_path=output_video, frame_rate=args.frame_rate, lk_params=lk_params, feature_params=feature_params, reinit_threshold=args.reinit_threshold, err_thresh=args.error_threshold, start_frame=args.start_frame, method=args.method, pyrdown_level=1, plots_dir=plots_dir)
+    
+    print(f"Video saved successfully as {output_video}.")

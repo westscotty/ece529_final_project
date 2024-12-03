@@ -17,7 +17,7 @@ gaussian_low_pass   = { 'cv2': gaussian_low_pass_cv2,
                     'numpy': gaussian_low_pass_numpy
                   }
 
-def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False):
+def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False, plots_dir=None):
     
     # Calculate image dimensions
     height, width = img.shape
@@ -48,9 +48,10 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
             PNSR Iy: {pnsr_Iy:.5f}
             """)
         
-        if show_image:
-            make_comparison_image([test_Ix1-test_Ix2, test_Iy1-test_Iy2], ['Sobel Ix Delta', 'Sobel Iy Delta'], "Sobel Deltas")
-            plt.show()
+        out_file = ""
+        if plots_dir:
+            out_file = f"{plots_dir}/gradients_sample.png"
+        make_comparison_image([test_Ix2, test_Iy2], ['Sobel Ix', 'Sobel Iy'], "Sobel Kernels", out_file)
         
     # Compute elements of the covariance matrix
     # Ixx: Represents the gradient squared in the x-direction, emphasizing how the intensity changes horizontally.
@@ -69,9 +70,13 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
     Iyy, sigma_yy = gaussian_low_pass[method](Iyy0, ksize, sigma0)
     Ixy, sigma_xy = gaussian_low_pass[method](Ixy0, ksize, sigma0)
     if debug:
-        debug_messages(f"Sigmas (XX, YY, XY): {sigma_xx:.5f}, {sigma_yy:.5f}, {sigma_xy:.5f}")
-        
-    if debug:
+        debug_messages(f"""
+            Sigmas: 
+            Iyy: {sigma_xx:.5f}
+            Iy: y{sigma_yy:.5f}
+            Ixy: {sigma_xy:.5f}
+                    """)
+ 
         test_Ixx1, sigma_xx1 = gaussian_low_pass['cv2'](Ixx0, 3, 0)
         test_Iyy1, sigma_yy1 = gaussian_low_pass['cv2'](Iyy0, 3, 0)
         test_Ixy1, sigma_xy1 = gaussian_low_pass['cv2'](Ixy0, 3, 0)
@@ -93,10 +98,11 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
             Sigmas YY: {sigma_yy1}, {sigma_yy2}
             Sigmas XY: {sigma_xy1}, {sigma_xy2}
             """)
-        
-        if show_image:
-            make_comparison_image([test_Ixx1-test_Ixx2, test_Iyy1-test_Iyy2, test_Ixy1-test_Ixy2], ['Gaussian Ixx Delta', 'Gaussian Iyy Delta', 'Gaussian Ixy Delta'], "Gaussian Deltas")
-            plt.show()
+
+        out_file = ""
+        if plots_dir:
+            out_file = f"{plots_dir}/gaussian_low_pass_filters.png"
+        make_comparison_image([test_Ixx2, test_Iyy2, test_Ixy2], ['Gaussian Ixx', 'Gaussian Iyy', 'Gaussian Ixy'], "Gaussian Low Pass Filters", out_file)
 
         
     # Compute the minimum eigenvalue (Shi-Tomasi score) for each pixel
@@ -122,7 +128,8 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
     # Use CV2 implementation for comparison  
     coords_cv2 = cv2.goodFeaturesToTrack(image=img, maxCorners=max_corners, qualityLevel=sensitivity, minDistance=min_dist)
     coords_cv2 = np.array([(int(corner[0][1]), int(corner[0][0])) for corner in coords_cv2])
-    filtered_coords_cv2 = coordinate_density_filter(coords_cv2, min_dist, max_corners, height, width)
+    # filtered_coords_cv2 = coordinate_density_filter(coords_cv2, min_dist, max_corners, height, width)
+    filtered_coords_cv2 = coords_cv2
     
     return filtered_coords, filtered_coords_cv2
 

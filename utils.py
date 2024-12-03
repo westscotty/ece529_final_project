@@ -4,9 +4,9 @@ import cv2
 
 
 def debug_messages(message):
-    print(f"\n<< DEBUG >>")
+    print(f"\n\n<< DEBUG >>")
     print(message)
-    print("<< DEBUG >>\n")
+    print("<< DEBUG >>")
     
     
 def coordinate_density_filter(coords, min_dist, max_corners, image_height, image_width, image_edge_threshold=5):

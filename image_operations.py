@@ -92,7 +92,7 @@ def apply_convolution(image, kernel):
     
     return convolved_image
 
-def sobel_operator_numpy(img, ksize, xy=0, scipy=True):
+def sobel_operator_numpy(img, ksize, xy=0, scipy=False):
     """Applies Sobel operator to compute image gradients Ix and Iy using numpy routine."""
     
     # Sobel kernels
@@ -102,6 +102,7 @@ def sobel_operator_numpy(img, ksize, xy=0, scipy=True):
     if not scipy:
         #Apply convolution using the Sobel kernels
         gradient_img = apply_convolution(image_norm, sobel)
+        # gradient_img = cv2.filter2D(src=image_norm, ddepth=-1, kernel=sobel)
     else:
         gradient_img = conv2d(image_norm, sobel, mode='same', boundary='fill', fillvalue=0)
         

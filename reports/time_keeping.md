@@ -9,7 +9,7 @@
                   KLT algorithm, and found example videos to use for testing (2.5 hours)
 - **2024-09-24**: Finalized proposal with sources identification (3 hours)
 
-## Development
+## Development and Testing
 
 - **2024-10-05**: Played with cv2 library in python importing videos and converting to grayscale (2 hours)
 - **2024-10-06**: Played with cv2 library more (1 hours)
@@ -30,15 +30,25 @@
 - **2024-11-04**: Devloped further the lucas-kanade method (openCV portion) and generated a video utilities file to use for generic functin calls. Ready to convert to implementing the lucas-kanade alg from scratch now that the wrapper for the results is flushed out. (4.75 hours)
 - **2024-11-05**: Developed algorithm for calcOpticalFlowPyrLK method, using same inputs as the cv2 method. Now I have a fully functional custom klt alg and a cv2 implementation. Next steps are making the custom method run solely on numpy operators, as well as quantifying performance between it, and adding comments throughout to discuss the math behind each operation. (7 hours)
 - **2024-11-10**: Working on adding numpy versioning to the lucas-kanade algorithm (now fully numpy convolutions can be used) as well as added a frame skipping routine and a recursive pydown image operation to make the images smaller and therefore faster to calculate on (5.5 hours)
+- **2024-11-15**: Revisited code for corner detections, made it work by testing both baseline and custom methods for corners (3 hours)
+- **2024-11-18**: Worked on code clean up (2 hours)
+- **2024-11-21**: Developed video utilites to better work with code base, more generic now (3 hours)
+- **2024-11-22**: Wroked on plotting functions to come with methods to figure out how to best plot the corners are detected (nn methods)
+- **2024-11-25**: Worked on testing metric ideas
 - **2024-12-02**: Updated code for all image operations to be more generic, only working with a single image at a time (2.5 hours)
-  - Started final report
+  - Started final report (1.5 hours)
   - Developed testing metrics for cv2 implementation versus numpy implementation
     - Split focus between corners, persisting corners, and corner location (number of corners over all)
-  - Developed testing metric plots
-  - Developed method for output images
-  - Developed DOE for evaluating performance overall
-  - ...
+  - Developed testing metric plots (2 hours)
+  - Reworked convolution algorithm (1.5 hour)
+- **2024-12-03**: Developed method for output images to be in quadrants (3 hours)
+  - Developed MC analaysis script for evaluating performance overall
+  - Developed psnr and mae method for images to be evaluated against each other
 
-## Testing
+## TODO
 
-- **2024-##-##**: TODO
+- Evalute performance
+- Implement mean-shift algorithm
+- comment code
+- DOEs for kernel sizes, and additional image operations
+- write report detailing the algorithm design and code implementation

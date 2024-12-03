@@ -4,30 +4,47 @@ import matplotlib.pyplot as plt
 from scipy.spatial import KDTree
 from sklearn.cluster import KMeans
 
-def draw_corner_markers(img, corners, color):
+green = (0, 255, 0)
+red = (0, 0, 255)
+blue = (255, 0, 0)
+
+def draw_corner_markers(img, corners, color=red, size=2):
     # if not type(corners) == type([]):
     #     breakpoint()
     for (y, x) in corners:
         x, y = int(x), int(y)
-        cv2.circle(img, (x, y), 2, color, -1)
+        cv2.circle(img, (x, y), size, color, -1)
     return img
 
 def draw_lines(img, corner1, corner2, color):
     cv2.line(img, corner1, corner2, color, 2)
     return img
 
-def make_comparison_image(images, titles, suptitle):
+def make_comparison_image(images, titles, suptitle, output_file):
     
     # Display and save the image with corners
     n = len(images)
     plt.figure(figsize=(12, 8))
-    plt.suptitle(suptitle)
+    # plt.suptitle(suptitle)
     for i, image in enumerate(images):
-        plt.axis('off')
+        # plt.axis('off')
         plt.subplot(1, n, i+1)
         plt.title(titles[i])
         plt.imshow(images[i], cmap='gray')
+    plt.savefig(output_file, bbox_inches='tight', pad_inches=0.1)
+    plt.close() 
         
+def write_image(image, suptitle, output_file):
+    
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # Display and save the image with corners
+    plt.figure(figsize=(12, 8))
+    plt.suptitle(suptitle)
+    plt.axis('off')
+    plt.imshow(image_rgb)
+    # plt.imsave(output_file, image, cmap='gray')
+    plt.savefig(output_file, bbox_inches='tight', pad_inches=0.1)
+    plt.close() 
         
 def make_bounding_boxes(corners, image):
 
@@ -184,28 +201,56 @@ def plot_stats(frames, stat1, stat2, yaxis="Y Axis", title="", output_file=""):
     plt.plot(frames, stat2, color='green', label='OpenCV')
     plt.xlabel('Frame ID')
     plt.ylabel(yaxis)
-    plt.yticks([0,1])
+    # plt.yticks([0,1])
+    plt.legend()
+    # plt.tight_layout()
+    plt.grid(visible=True)
     if title:
-        plt.title(title)
+        plt.suptitle(title)
     if output_file:
         plt.savefig(output_file)
-    plt.legend()
-    plt.tight_layout()
-    plt.grid(visible=True)
-    plt.show()
+    else:
+        plt.show()
+    plt.close()
 
-def plot_error(frames, error, yaxis="\%\ Error", title="", output_file=""):
+def plot_error(frames, error, yaxis="Percent Error", title="", output_file=""):
     
     plt.figure()
     plt.plot(frames, error, color='red', label='Numpy')
     plt.xlabel('Frame ID')
     plt.ylabel(yaxis)
-    plt.yticks([0,1])
+    # plt.yticks([0,1])
+
+    plt.legend()
+    # plt.tight_layout()
+    plt.grid(visible=True)
     if title:
-        plt.title(title)
+        plt.suptitle(title)
     if output_file:
         plt.savefig(output_file)
-    plt.legend()
-    plt.tight_layout()
-    plt.grid(visible=True)
-    plt.show()
+    else:
+        plt.show()
+    plt.close()
+    
+def create_histogram(data_dict, output_file):
+    
+    # Create a grid of histograms
+    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(15, 12))
+    axes = axes.flatten()
+
+    # Plot histograms for each parameter
+    for i, (var_name, values) in enumerate(data_dict.items()):
+        ax = axes[i]
+        ax.hist(values, bins=20, color='blue', alpha=0.7, edgecolor='black')
+        ax.set_title(f"Histogram of {var_name}")
+        ax.set_xlabel(var_name)
+        ax.set_ylabel("Frequency")
+
+    # Remove unused subplots if any
+    for j in range(len(data_dict), len(axes)):
+        fig.delaxes(axes[j])
+
+    plt.title(f"Histogram for MC Variables")
+    # plt.tight_layout()
+    plt.savefig(output_file)
+    plt.close()
