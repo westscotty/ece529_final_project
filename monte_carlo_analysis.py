@@ -51,7 +51,7 @@ for i in tqdm(range(num_runs), desc="Processing Run"):
     os.mkdir(output_path)
     
     mc_vars = []
-    print("\n")
+    # print("\n")
     for key, vals in mc_data.items():
         # print(f"{key}: {vals[i]}")
         mc_vars.append(vals[i])

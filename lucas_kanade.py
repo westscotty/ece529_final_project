@@ -8,7 +8,7 @@ from plot_utils import make_comparison_image, draw_corner_markers, draw_lines, g
 import video_utils as vid
 from copy import copy
 import argparse
-from image_operations import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
+from image_utils import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
 import gc
 

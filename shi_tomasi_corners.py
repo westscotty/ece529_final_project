@@ -7,7 +7,7 @@ from copy import copy
 import argparse
 from utils import debug_messages, coordinate_density_filter, mae, psnr, ssim
 from plot_utils import make_comparison_image, draw_corner_markers
-from image_operations import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
+from image_utils import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
 from video_utils import reshape_points
 
