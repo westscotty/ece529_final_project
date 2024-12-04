@@ -33,8 +33,8 @@
 - **2024-11-15**: Revisited code for corner detections, made it work by testing both baseline and custom methods for corners (3 hours)
 - **2024-11-18**: Worked on code clean up (2 hours)
 - **2024-11-21**: Developed video utilites to better work with code base, more generic now (3 hours)
-- **2024-11-22**: Wroked on plotting functions to come with methods to figure out how to best plot the corners are detected (nn methods)
-- **2024-11-25**: Worked on testing metric ideas
+- **2024-11-22**: Wroked on plotting functions to come with methods to figure out how to best plot the corners are detected (nearest neighbor, k-means clustering, euclidean distance grouping) (4 hours)
+- **2024-11-25**: Worked on testing metric ideas(2 hours)
 - **2024-12-02**: Updated code for all image operations to be more generic, only working with a single image at a time (2.5 hours)
   - Started final report (1.5 hours)
   - Developed testing metrics for cv2 implementation versus numpy implementation
@@ -42,13 +42,13 @@
   - Developed testing metric plots (2 hours)
   - Reworked convolution algorithm (1.5 hour)
 - **2024-12-03**: Developed method for output images to be in quadrants (3 hours)
-  - Developed MC analaysis script for evaluating performance overall
-  - Developed psnr and mae method for images to be evaluated against each other
+  - Developed MC analaysis script for evaluating performance overall(3 hours)
+  - Developed psnr, mae, ssim, precison, and recall methods for images to be evaluated against each other (3.5 hours)
+- **2024-12-04**: Connected mc script to lucas kanade script in order to generate data and plots that show the results from each seed compared to the others (3 hours)
+  - Also updated time_keeping sheet
 
 ## TODO
 
-- Evalute performance
-- Implement mean-shift algorithm
-- comment code
-- DOEs for kernel sizes, and additional image operations
-- write report detailing the algorithm design and code implementation
+- comment more code
+- Work on report report detailing the algorithm design and code implementation comparing the code from scratch versus the code from openCV
+- Need to write about the convolutio algorithm for the sobel and gaussian operators
