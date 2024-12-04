@@ -108,7 +108,7 @@ def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, lk_params=None, ksize=
     points_curr, st, err = cv2.calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, None, **lk_params)
     return points_curr, st, err
 
-def validate_points(points_prev_0, corners_0, points_curr, st, err, corners, points_prev, err_thresh, image):
+def validate_points(points_prev_0, points_curr, st, err, points_prev, err_thresh, image):
         
         reinit = 0
         if points_curr is not None and st is not None:                
@@ -133,25 +133,17 @@ def validate_points(points_prev_0, corners_0, points_curr, st, err, corners, poi
                 a, b = map(int, new.ravel())
                 c, d = map(int, old.ravel())
                 image = draw_corner_markers(image, [(a, b)], vid.green)  # Green markers
-                # image = draw_lines(image, (b, a), (d, c), vid.blue)    # Blue lines
-                
-            # ## Bounding box around clusters of points
-            # if good_new.size > 0:
-            #     corner_groups_nn = group_corners_nearest_neighbors(good_new, 50)
-            #     bboxes_nn = make_bounding_boxes_from_groups(corner_groups_nn, image)
-            #     image = add_bounding_boxes_to_image(image, bboxes_nn, vid.red)
 
             ## Update points for the next frame
-            points_prev_0 = good_new.reshape(-1, 1, 2)
+            points_prev_0 = vid.reshape_points(good_new)
         else:
             ## Reinitialize points if tracking fails
-            corners_0 = corners
-            points_prev_0 = points_prev
-            image = draw_corner_markers(image, np.squeeze(points_prev_0), vid.red)
+            image = draw_corner_markers(image, np.squeeze(points_prev_0), vid.green)
+            image = draw_corner_markers(image, np.squeeze(points_prev), vid.red)
+            points_prev_0 = np.append(points_prev_0, points_prev, axis=0)
             reinit = 1
-            print("blah")
         
-        return image, corners_0, points_prev_0, reinit
+        return image, points_prev_0, reinit
 
 
 # Function to perform optical flow tracking on a video
@@ -168,13 +160,13 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
     gray_first_frame = cv2.cvtColor(first_frame, cv2.COLOR_BGR2GRAY)
 
     ## Detect initial corners
-    corners_0, corners_0_cv2 = stc.shi_tomasi_corners(gray_first_frame, **feature_params)
-    points_prev_0 = vid.reshape_points(corners_0)
-    points_prev_0_cv2 = vid.reshape_points(corners_0_cv2)
+    points_prev_0, points_prev_0_cv2 = stc.shi_tomasi_corners(gray_first_frame, **feature_params)
+    # points_prev_0 = vid.reshape_points(corners_0)
+    # points_prev_0_cv2 = vid.reshape_points(corners_0_cv2)
     
     ## Write first frame to output video
-    first_frame_tl = draw_corner_markers(first_frame.copy(), corners_0, vid.blue)  # blue markers
-    first_frame_tr = draw_corner_markers(first_frame.copy(), corners_0_cv2, vid.blue)  # blue markers
+    first_frame_tl = draw_corner_markers(first_frame.copy(), np.squeeze(points_prev_0), vid.blue)  # blue markers
+    first_frame_tr = draw_corner_markers(first_frame.copy(), np.squeeze(points_prev_0_cv2), vid.blue)  # blue markers
     first_frame_bl = first_frame.copy()
     first_frame_br = first_frame.copy()
     top_half = np.hstack((first_frame_tl, first_frame_tr))
@@ -183,8 +175,8 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
 
     reinits = {'numpy': [1], 'cv2': [1]}  # Gather stats
     attempts = {'numpy': [0], 'cv2': [0]} # Gather stats
-    stc_corners = {'numpy': [len(corners_0)], 'cv2': [len(corners_0_cv2)]}  # Gather stats
-    lk_good_corners = {'numpy': [len(corners_0)], 'cv2': [len(corners_0_cv2)]}  # Gather stats
+    stc_corners = {'numpy': [len(points_prev_0)], 'cv2': [len(points_prev_0_cv2)]}  # Gather stats
+    lk_good_corners = {'numpy': [len(points_prev_0)], 'cv2': [len(points_prev_0_cv2)]}  # Gather stats
     stc_maes = []  # Gather stats
     stc_psnrs = []  # Gather stats
     lk_maes = []  # Gather stats
@@ -209,16 +201,16 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
         else:
             debug = False
             debug_plots_dir = None
-        corners, corners_cv2 = stc.shi_tomasi_corners(gray_frame, debug=debug, plots_dir=debug_plots_dir, **feature_params)
-        stc_corners['cv2'].append(len(corners_cv2)) # Gather stats
-        stc_corners['numpy'].append(len(corners)) # Gather stats
-        points_prev = vid.reshape_points(corners)
-        points_prev_cv2 = vid.reshape_points(corners_cv2)
+        points_prev, points_prev_cv2 = stc.shi_tomasi_corners(gray_frame, debug=debug, plots_dir=debug_plots_dir, **feature_params)
+        stc_corners['cv2'].append(len(points_prev_cv2)) # Gather stats
+        stc_corners['numpy'].append(len(points_prev)) # Gather stats
+        # points_prev = vid.reshape_points(corners)
+        # points_prev_cv2 = vid.reshape_points(corners_cv2)
 
         # Create corner videos quadrants
         # top half is left: numpy corners detected, right: cv2.goodFeaturesToTrack 
-        frame_tl = draw_corner_markers(frame.copy(), corners, vid.blue)  # blue markers
-        frame_tr = draw_corner_markers(frame.copy(), corners_cv2, vid.blue)  # blue markers
+        frame_tl = draw_corner_markers(frame.copy(), np.squeeze(points_prev), vid.blue)  # blue markers
+        frame_tr = draw_corner_markers(frame.copy(), np.squeeze(points_prev_cv2), vid.blue)  # blue markers
         top_half = np.hstack((frame_tl, frame_tr))
         frame_bl = frame.copy()
         frame_br = frame.copy()
@@ -226,25 +218,25 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
         ## Check if there are points to track
         if points_prev_0_cv2 is not None and len(points_prev_0_cv2) > reinit_threshold:
             points_curr_cv2, st_cv2, err_cv2 = calcOpticalFlowPyrLK(gray_first_frame, gray_frame, points_prev_0_cv2, method=method, lk_params=lk_params)
-            frame_br, corners_0_cv2, points_prev_0_cv2, reinit_cv2 = validate_points(points_prev_0_cv2, corners_0_cv2, points_curr_cv2, st_cv2, err_cv2, corners_cv2, points_prev_cv2, err_thresh, frame_br)
+            frame_br, points_prev_0_cv2, reinit_cv2 = validate_points(points_prev_0_cv2, points_curr_cv2, st_cv2, err_cv2, points_prev_cv2, err_thresh, frame_br)
             attempted_cv2 = 1
         else:
             ## Reinitialize points if few points remain or were lost
-            corners_0_cv2 = corners
-            points_prev_0_cv2 = points_prev_cv2
-            frame_br = draw_corner_markers(frame_br, np.squeeze(points_prev_0_cv2), vid.red)
+            frame_br = draw_corner_markers(frame_br, np.squeeze(points_prev_0_cv2), vid.green)
+            frame_br = draw_corner_markers(frame_br, np.squeeze(points_prev_cv2), vid.red)
+            points_prev_0_cv2 = np.append(points_prev_0_cv2, points_prev_cv2, axis=0)
             reinit_cv2 = 1
         
         ## Check if there are points to track
         if points_prev_0 is not None and len(points_prev_0) > reinit_threshold:
             points_curr, st, err = calcOpticalFlowPyrLK_numpy(gray_first_frame, gray_frame, points_prev_0, method=method, lk_params=lk_params)
-            frame_bl, corners_0, points_prev_0, reinit = validate_points(points_prev_0, corners_0, points_curr, st, err, corners, points_prev, err_thresh, frame_bl)
+            frame_bl, points_prev_0, reinit = validate_points(points_prev_0, points_curr, st, err, points_prev, err_thresh, frame_bl)
             attempted = 1
         else:
             ## Reinitialize points if few points remain or were lost
-            corners_0 = corners
-            points_prev_0 = points_prev
-            frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev_0), vid.red)
+            frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev_0), vid.green)
+            frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev), vid.red)
+            points_prev_0 = np.append(points_prev_0, points_prev, axis=0)
             reinit = 1
             
         lk_good_corners['cv2'].append(len(points_prev_0_cv2))

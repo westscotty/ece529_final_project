@@ -7,6 +7,7 @@ from sklearn.cluster import KMeans
 green = (0, 255, 0)
 red = (0, 0, 255)
 blue = (255, 0, 0)
+white = (255, 255, 255)
 
 def draw_corner_markers(img, corners, color=red, size=2):
     # if not type(corners) == type([]):
@@ -20,7 +21,7 @@ def draw_lines(img, corner1, corner2, color):
     cv2.line(img, corner1, corner2, color, 2)
     return img
 
-def make_comparison_image(images, titles, suptitle, output_file):
+def make_comparison_image(images, titles, suptitle, output_file=None):
     
     # Display and save the image with corners
     n = len(images)
@@ -31,7 +32,10 @@ def make_comparison_image(images, titles, suptitle, output_file):
         plt.subplot(1, n, i+1)
         plt.title(titles[i])
         plt.imshow(images[i], cmap='gray')
-    plt.savefig(output_file, bbox_inches='tight', pad_inches=0.1)
+    if output_file:
+        plt.savefig(output_file, bbox_inches='tight', pad_inches=0.1)
+    else:
+        plt.show()
     plt.close() 
         
 def write_image(image, suptitle, output_file):
@@ -197,8 +201,8 @@ def make_bounding_boxes_from_groups(corner_groups, image):
 def plot_stats(frames, stat1, stat2, yaxis="Y Axis", title="", output_file=""):
     
     plt.figure()
-    plt.plot(frames, stat1, color='red', label='Numpy')
-    plt.plot(frames, stat2, color='green', label='OpenCV')
+    plt.plot(frames, stat1, color='red', linewidth=3, label='Numpy')
+    plt.plot(frames, stat2, color='green', linewidth=1.5, label='OpenCV')
     plt.xlabel('Frame ID')
     plt.ylabel(yaxis)
     # plt.yticks([0,1])

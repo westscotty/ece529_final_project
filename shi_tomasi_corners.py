@@ -9,6 +9,7 @@ from utils import debug_messages, coordinate_density_filter, error_metrics
 from plot_utils import make_comparison_image, draw_corner_markers
 from image_operations import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
+from video_utils import reshape_points
 
 gradient = { 'cv2': sobel_operator_cv2,
                     'numpy': sobel_operator_numpy
@@ -48,7 +49,7 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
             PNSR Iy: {pnsr_Iy:.5f}
             """)
         
-        out_file = ""
+        out_file = None
         if plots_dir:
             out_file = f"{plots_dir}/gradients_sample.png"
         make_comparison_image([test_Ix2, test_Iy2], ['Sobel Ix', 'Sobel Iy'], "Sobel Kernels", out_file)
@@ -99,7 +100,7 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
             Sigmas XY: {sigma_xy1}, {sigma_xy2}
             """)
 
-        out_file = ""
+        out_file = None
         if plots_dir:
             out_file = f"{plots_dir}/gaussian_low_pass_filters.png"
         make_comparison_image([test_Ixx2, test_Iyy2, test_Ixy2], ['Gaussian Ixx', 'Gaussian Iyy', 'Gaussian Ixy'], "Gaussian Low Pass Filters", out_file)
@@ -131,7 +132,7 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
     # filtered_coords_cv2 = coordinate_density_filter(coords_cv2, min_dist, max_corners, height, width)
     filtered_coords_cv2 = coords_cv2
     
-    return filtered_coords, filtered_coords_cv2
+    return reshape_points(filtered_coords), reshape_points(filtered_coords_cv2)
 
 # Example usage
 if __name__ == "__main__":
@@ -190,12 +191,12 @@ if __name__ == "__main__":
     # Copy Image then draw corners on the BGR converted
     result_img = img.copy()
     result_img_bgr = cv2.cvtColor(result_img, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
-    result_img_bgr = draw_corner_markers(result_img_bgr, corners, (0, 255, 0))
+    result_img_bgr = draw_corner_markers(result_img_bgr, np.squeeze(corners), (0, 255, 0))
     
     # Copy Image then draw corners on the BGR converted
     result_img2 = img.copy()
     result_img_bgr2 = cv2.cvtColor(result_img2, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
-    result_img_bgr2 = draw_corner_markers(result_img_bgr2, corners_cv2, (255, 0, 0))
+    result_img_bgr2 = draw_corner_markers(result_img_bgr2, np.squeeze(corners_cv2), (255, 0, 0))
 
     # Print corners if the flag is set
     if args.debug:
@@ -220,5 +221,3 @@ if __name__ == "__main__":
     if args.output_image:
         plt.savefig(output_image)
         
-    # Display image to screen
-    plt.show()

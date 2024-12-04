@@ -1,13 +1,13 @@
 import cv2
 import numpy as np
 from tqdm import tqdm
-import shi_tomasi_corners as stc
 import utils as utils
 import sys
 
 green = (0, 255, 0)
 red = (0, 0, 255)
 blue = (255, 0, 0)
+white = (255, 255, 255)
 
 def open_video(video_path):
     
