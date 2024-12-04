@@ -3,7 +3,7 @@ import os
 import numpy as np
 from tqdm import tqdm
 import shi_tomasi_corners as stc
-from utils import debug_messages, mae, psnr, ssim, precision, recall
+from utils import debug_messages, mae, psnr, ssim, precision, recall, gather_stats
 from plot_utils import make_comparison_image, draw_corner_markers, draw_lines, group_corners_nearest_neighbors, make_bounding_boxes_from_groups, add_bounding_boxes_to_image, plot_stats, write_image, plot_error
 import video_utils as vid
 from copy import copy
@@ -136,6 +136,11 @@ def validate_points(points_prev_0, points_curr, st, err, points_prev, err_thresh
 
             ## Update points for the next frame
             points_prev_0 = vid.reshape_points(good_new)
+            
+            if type(points_prev_0) == type(None):
+                image = draw_corner_markers(image, np.squeeze(points_prev), vid.red)
+                points_prev_0 = points_prev
+                reinit = 1
         else:
             ## Reinitialize points if tracking fails
             image = draw_corner_markers(image, np.squeeze(points_prev_0), vid.green)
@@ -171,21 +176,9 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
     bott_half = np.hstack((first_frame_bl, first_frame_br))
     out_video.write(np.vstack((top_half, bott_half)))
 
-    reinits = {'numpy': [], 'cv2': []}  # Gather stats
-    attempts = {'numpy': [], 'cv2': []} # Gather stats
-    stc_corners = {'numpy': [], 'cv2': []}  # Gather stats
-    lk_good_corners = {'numpy': [], 'cv2': []}  # Gather stats
-    stc_maes =  []  # Gather stats
-    stc_psnrs = []  # Gather stats
-    stc_ssims = []  # Gather stats
-    stc_precs = []  # Gather stats
-    stc_recs =  []  # Gather stats
-    lk_maes =   []  # Gather stats
-    lk_psnrs =  []  # Gather stats
-    lk_ssims =  []  # Gather stats
-    lk_precs =  []  # Gather stats
-    lk_recs =   []  # Gather stats
-
+    # Gather stats
+    reinits, reinits_cv2, attempts, attempts_cv2, stc_corners, stc_corners_cv2, stc_maes, stc_psnrs, stc_ssims, stc_precs, stc_recs, lk_good_corners, lk_good_corners_cv2, lk_maes, lk_psnrs, lk_ssims, lk_precs, lk_recs =  ([] for _ in range(18))
+    
     sample_count = 0
     
     ## Process each frame
@@ -206,8 +199,8 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
             debug = False
             debug_plots_dir = None
         points_prev, points_prev_cv2 = stc.shi_tomasi_corners(gray_frame, debug=debug, plots_dir=debug_plots_dir, **feature_params)
-        stc_corners['cv2'].append(len(points_prev_cv2)) # Gather stats
-        stc_corners['numpy'].append(len(points_prev)) # Gather stats
+        stc_corners_cv2.append(len(points_prev_cv2)) # Gather stats
+        stc_corners.append(len(points_prev)) # Gather stats
         # points_prev = vid.reshape_points(corners)
         # points_prev_cv2 = vid.reshape_points(corners_cv2)
 
@@ -244,12 +237,12 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
             reinit = 1
         
         # gather metrics
-        lk_good_corners['cv2'].append(len(points_prev_0_cv2))
-        lk_good_corners['numpy'].append(len(points_prev_0))
-        reinits['cv2'].append(reinit_cv2)
-        reinits['numpy'].append(reinit)
-        attempts['cv2'].append(attempted_cv2)
-        attempts['numpy'].append(attempted)
+        lk_good_corners_cv2.append(len(points_prev_0_cv2))
+        lk_good_corners.append(len(points_prev_0))
+        reinits_cv2.append(reinit_cv2)
+        reinits.append(reinit)
+        attempts_cv2.append(attempted_cv2)
+        attempts.append(attempted)
         stc_maes.append(mae(frame_tr, frame_tl))
         stc_psnrs.append(psnr(frame_tr, frame_tl))
         stc_ssims.append(ssim(frame_tr, frame_tl))
@@ -276,49 +269,12 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
     cap.release()
 
     out_video.release()
-
-    # Plot stats
-    output_file1 = ""; output_file2 = ""; output_file3 = ""; output_file4 = ""
-    output_file5 = ""; output_file6 = ""; output_file7 = ""; output_file8 = ""
-    output_file9 = ""; output_file10 = ""; output_file11 = ""; output_file12 = ""
-    output_file13 = ""; output_file14 = ""
-    if plots_dir:
-        output_file1 = f"{plots_dir}/reinits.png"
-        output_file2 = f"{plots_dir}/attempts.png"
-        output_file3 = f"{plots_dir}/stc_corners.png"
-        output_file4 = f"{plots_dir}/lk_good_corners.png"
-        output_file5 = f"{plots_dir}/stc_mae.png"
-        output_file6 = f"{plots_dir}/stc_psnr.png"
-        output_file7 = f"{plots_dir}/stc_ssim.png"
-        output_file8 = f"{plots_dir}/stc_precision.png"
-        output_file9 = f"{plots_dir}/stc_recall.png"        
-        output_file10 = f"{plots_dir}/lk_mae.png"
-        output_file11 = f"{plots_dir}/lk_psnr.png"
-        output_file12 = f"{plots_dir}/lk_ssim.png"
-        output_file13 = f"{plots_dir}/lk_precision.png"
-        output_file14 = f"{plots_dir}/lk_recall.png"
-    
-    frames_= np.arange(0, frames)
-    plot_stats(frames_, reinits['numpy'], reinits['cv2'], "Detect New Corners", output_file=output_file1, title="Reinitialized Corners")
-    plot_stats(frames_, attempts['numpy'], attempts['cv2'], "Attempted Optical Flow", output_file=output_file2, title="Attempts with Previous Frame's Corners")
-    plot_stats(frames_, stc_corners['numpy'], stc_corners['cv2'], "Number of Detected Corners", output_file=output_file3, title="Shi Tomasi Corners")
-    plot_stats(frames_, lk_good_corners['numpy'], lk_good_corners['cv2'], "Number of Good Corners", output_file=output_file4, title="Lucas Kanade Good Corners")
-    
-    plot_error(frames_, stc_maes, "MAE", output_file=output_file5, title="Shi-Tomasi MAE")
-    plot_error(frames_, stc_psnrs, "PSNR", output_file=output_file6, title="Shi-Tomasi PSNR")
-    plot_error(frames_, stc_ssims, "SSIM", output_file=output_file7, title="Shi-Tomasi SSIM")
-    plot_error(frames_, stc_precs, "Precision", output_file=output_file8, title="Shi-Tomasi Precision")
-    plot_error(frames_, stc_recs, "Recall", output_file=output_file9, title="Shi-Tomasi Recall")
-    
-    plot_error(frames_, lk_maes, "MAE", output_file=output_file10, title="Lucas Kanade MAE")
-    plot_error(frames_, lk_psnrs, "PSNR", output_file=output_file11, title="Lucas Kanade PSNR")
-    plot_error(frames_, lk_ssims, "SSIM", output_file=output_file12, title="Lucas Kanade SSIM")
-    plot_error(frames_, lk_precs, "Precision", output_file=output_file13, title="Lucas Kanade Precision")
-    plot_error(frames_, lk_recs, "Recall", output_file=output_file14, title="Lucas Kanade Recall")
-    
     
     gc.collect()
-    return reinits, attempts, stc_maes, stc_psnrs, lk_maes, lk_psnrs
+    
+    if plots_dir:
+        return gather_stats(plots_dir, frames, reinits, reinits_cv2, attempts, attempts_cv2, stc_corners, stc_corners_cv2, stc_maes, stc_psnrs, stc_ssims, stc_precs, stc_recs, lk_good_corners, lk_good_corners_cv2, lk_maes, lk_psnrs, lk_ssims, lk_precs, lk_recs)
+
 
 # Example usage
 if __name__ == "__main__":

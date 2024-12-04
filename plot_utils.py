@@ -218,7 +218,7 @@ def plot_stats(frames, stat1, stat2, yaxis="Y Axis", title="", output_file=""):
 def plot_error(frames, error, yaxis="Percent Error", title="", output_file=""):
     
     plt.figure(figsize=(6, 4))
-    plt.plot(frames, error, color='red', label='Numpy')
+    plt.plot(frames, error, color='red')
     plt.xlabel('Frame ID')
     plt.ylabel(yaxis)
     plt.grid(visible=True)
@@ -251,4 +251,44 @@ def create_histogram(data_dict, output_file):
     plt.suptitle(f"Histogram for MC Variables")
     plt.tight_layout()
     plt.savefig(output_file)
+    plt.close()
+    
+def plot_mc_stats(all_frames, stats1, stats2, yaxis="Y Axis", title="", output_file=""):
+    
+    plt.figure(figsize=(6, 4))
+    for i in range(len(stats1)):
+        stat1 = stats1[i]
+        stat2 = stats2[i]
+        frames = all_frames[i]
+        plt.plot(frames, stat1, color='red', label=f'Numpy')
+        plt.plot(frames, stat2, color='green', label='OpenCV')
+    plt.xlabel('Frame ID')
+    plt.ylabel(yaxis)
+    plt.legend()
+    plt.grid(visible=True)
+    if title:
+        plt.suptitle(title)
+    if output_file:
+        plt.savefig(output_file)
+    else:
+        plt.show()
+    plt.close()
+
+def plot_mc_error(all_frames, errors, yaxis="Percent Error", title="", output_file=""):
+    
+    plt.figure(figsize=(6, 4))
+    for i in range(len(errors)):
+        error = errors[i]
+        frames = all_frames[i]
+        plt.plot(frames, error, label=f'seed_{i}')
+    plt.xlabel('Frame ID')
+    plt.ylabel(yaxis)
+    plt.legend()
+    plt.grid(visible=True)
+    if title:
+        plt.suptitle(title)
+    if output_file:
+        plt.savefig(output_file)
+    else:
+        plt.show()
     plt.close()

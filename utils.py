@@ -3,6 +3,7 @@ from skimage.metrics import peak_signal_noise_ratio
 import cv2
 from skimage.metrics import structural_similarity
 from video_utils import reshape_points
+from plot_utils import plot_error, plot_stats
 
 
 def debug_messages(message):
@@ -135,6 +136,47 @@ def recall(corners1, corners2, threshold):
     
     return recall
     
+def gather_stats(plots_dir, frames, reinits, reinits_cv2, attempts, attempts_cv2, stc_corners, stc_corners_cv2, stc_maes, stc_psnrs, stc_ssims, stc_precs, stc_recs, lk_good_corners, lk_good_corners_cv2, lk_maes, lk_psnrs, lk_ssims, lk_precs, lk_recs):
+    # Plot stats
+    output_file1 = ""; output_file2 = ""; output_file3 = ""; output_file4 = ""
+    output_file5 = ""; output_file6 = ""; output_file7 = ""; output_file8 = ""
+    output_file9 = ""; output_file10 = ""; output_file11 = ""; output_file12 = ""
+    output_file13 = ""; output_file14 = ""
+    if plots_dir:
+        output_file1 = f"{plots_dir}/reinits.png"
+        output_file2 = f"{plots_dir}/attempts.png"
+        output_file3 = f"{plots_dir}/stc_corners.png"
+        output_file4 = f"{plots_dir}/lk_good_corners.png"
+        output_file5 = f"{plots_dir}/stc_mae.png"
+        output_file6 = f"{plots_dir}/stc_psnr.png"
+        output_file7 = f"{plots_dir}/stc_ssim.png"
+        output_file8 = f"{plots_dir}/stc_precision.png"
+        output_file9 = f"{plots_dir}/stc_recall.png"        
+        output_file10 = f"{plots_dir}/lk_mae.png"
+        output_file11 = f"{plots_dir}/lk_psnr.png"
+        output_file12 = f"{plots_dir}/lk_ssim.png"
+        output_file13 = f"{plots_dir}/lk_precision.png"
+        output_file14 = f"{plots_dir}/lk_recall.png"
+    
+    frames_= np.arange(0, frames)
+    plot_stats(frames_, reinits, reinits_cv2, "Detect New Corners", output_file=output_file1, title="Reinitialized Corners")
+    plot_stats(frames_, attempts, attempts_cv2, "Attempted Optical Flow", output_file=output_file2, title="Attempts with Previous Frame's Corners")
+    plot_stats(frames_, stc_corners, stc_corners_cv2, "Number of Detected Corners", output_file=output_file3, title="Shi Tomasi Corners")
+    plot_stats(frames_, lk_good_corners, lk_good_corners_cv2, "Number of Good Corners", output_file=output_file4, title="Lucas Kanade Good Corners")
+    
+    plot_error(frames_, stc_maes, "MAE", output_file=output_file5, title="Shi-Tomasi MAE")
+    plot_error(frames_, stc_psnrs, "PSNR", output_file=output_file6, title="Shi-Tomasi PSNR")
+    plot_error(frames_, stc_ssims, "SSIM", output_file=output_file7, title="Shi-Tomasi SSIM")
+    plot_error(frames_, stc_precs, "Precision", output_file=output_file8, title="Shi-Tomasi Precision")
+    plot_error(frames_, stc_recs, "Recall", output_file=output_file9, title="Shi-Tomasi Recall")
+    
+    plot_error(frames_, lk_maes, "MAE", output_file=output_file10, title="Lucas Kanade MAE")
+    plot_error(frames_, lk_psnrs, "PSNR", output_file=output_file11, title="Lucas Kanade PSNR")
+    plot_error(frames_, lk_ssims, "SSIM", output_file=output_file12, title="Lucas Kanade SSIM")
+    plot_error(frames_, lk_precs, "Precision", output_file=output_file13, title="Lucas Kanade Precision")
+    plot_error(frames_, lk_recs, "Recall", output_file=output_file14, title="Lucas Kanade Recall")
+
+    return frames_, reinits, reinits_cv2, attempts, attempts_cv2, stc_corners, stc_corners_cv2, stc_maes, stc_psnrs, stc_ssims, stc_precs, stc_recs, lk_good_corners, lk_good_corners_cv2, lk_maes, lk_psnrs, lk_ssims, lk_precs, lk_recs
 
 # # Normalize Cross-correlation (NCC)
 # Ix_cv2_flat = Ix_cv2.flatten()
