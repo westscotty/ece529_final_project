@@ -5,7 +5,7 @@ import os
 import sys
 from copy import copy
 import argparse
-from utils import debug_messages, coordinate_density_filter, error_metrics
+from utils import debug_messages, coordinate_density_filter, mae, psnr, ssim
 from plot_utils import make_comparison_image, draw_corner_markers
 from image_operations import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
@@ -39,8 +39,8 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
         test_Iy1 = gradient['cv2'](gray.copy(), 3, 1)
         test_Ix2 = gradient['numpy'](gray.copy(), 3, 0)
         test_Iy2 = gradient['numpy'](gray.copy(), 3, 1)
-        mae_Ix, pnsr_Ix = error_metrics(test_Ix1, test_Ix2)
-        mae_Iy, pnsr_Iy = error_metrics(test_Iy1, test_Iy2)
+        mae_Ix, pnsr_Ix = mae(test_Ix1, test_Ix2), psnr(test_Ix1, test_Ix2)
+        mae_Iy, pnsr_Iy = mae(test_Iy1, test_Iy2), psnr(test_Iy1, test_Iy2)
         debug_messages(f"""
             Sobel Operators:
             MAE Ix: {mae_Ix:.5f}
@@ -84,9 +84,9 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
         test_Ixx2, sigma_xx2 = gaussian_low_pass['numpy'](Ixx0, 3, 0)
         test_Iyy2, sigma_yy2 = gaussian_low_pass['numpy'](Iyy0, 3, 0)
         test_Ixy2, sigma_xy2 = gaussian_low_pass['numpy'](Ixy0, 3, 0)
-        mae_Ixx, pnsr_Ixx = error_metrics(test_Ixx1, test_Ixx2)
-        mae_Iyy, pnsr_Iyy = error_metrics(test_Iyy1, test_Iyy2)
-        mae_Ixy, pnsr_Ixy = error_metrics(test_Ixy1, test_Ixy2)
+        mae_Ixx, pnsr_Ixx = mae(test_Ixx1, test_Ixx2), psnr(test_Ixx1, test_Ixx2)
+        mae_Iyy, pnsr_Iyy = mae(test_Iyy1, test_Iyy2), psnr(test_Iyy1, test_Iyy2)
+        mae_Ixy, pnsr_Ixy = mae(test_Ixy1, test_Ixy2), psnr(test_Ixy1, test_Ixy2)
         debug_messages(f"""
             Guassian Blur Kernels:
             MAE Ixx: {mae_Ixx:.5f}

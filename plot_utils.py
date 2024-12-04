@@ -200,14 +200,12 @@ def make_bounding_boxes_from_groups(corner_groups, image):
 
 def plot_stats(frames, stat1, stat2, yaxis="Y Axis", title="", output_file=""):
     
-    plt.figure()
+    plt.figure(figsize=(6, 4))
     plt.plot(frames, stat1, color='red', linewidth=3, label='Numpy')
     plt.plot(frames, stat2, color='green', linewidth=1.5, label='OpenCV')
     plt.xlabel('Frame ID')
     plt.ylabel(yaxis)
-    # plt.yticks([0,1])
     plt.legend()
-    # plt.tight_layout()
     plt.grid(visible=True)
     if title:
         plt.suptitle(title)
@@ -219,14 +217,10 @@ def plot_stats(frames, stat1, stat2, yaxis="Y Axis", title="", output_file=""):
 
 def plot_error(frames, error, yaxis="Percent Error", title="", output_file=""):
     
-    plt.figure()
+    plt.figure(figsize=(6, 4))
     plt.plot(frames, error, color='red', label='Numpy')
     plt.xlabel('Frame ID')
     plt.ylabel(yaxis)
-    # plt.yticks([0,1])
-
-    plt.legend()
-    # plt.tight_layout()
     plt.grid(visible=True)
     if title:
         plt.suptitle(title)
@@ -254,7 +248,7 @@ def create_histogram(data_dict, output_file):
     for j in range(len(data_dict), len(axes)):
         fig.delaxes(axes[j])
 
-    plt.title(f"Histogram for MC Variables")
-    # plt.tight_layout()
+    plt.suptitle(f"Histogram for MC Variables")
+    plt.tight_layout()
     plt.savefig(output_file)
     plt.close()
