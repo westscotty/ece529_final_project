@@ -51,9 +51,9 @@ for i in tqdm(range(num_runs), desc="Processing Run"):
     os.mkdir(output_path)
     
     mc_vars = []
-    print()
+    print("\n")
     for key, vals in mc_data.items():
-        print(f"{key}: {vals[i]}")
+        # print(f"{key}: {vals[i]}")
         mc_vars.append(vals[i])
     
     lk_params = dict(winSize=(int(mc_vars[6]),int(mc_vars[6])), maxLevel=int(mc_vars[8]), criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.01))
