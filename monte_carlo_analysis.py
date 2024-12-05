@@ -11,22 +11,22 @@ from utils import debug_messages
 np.random.seed(11001)
 
 input_video = "data/videos/blue_angels_formation.mp4"
-start_frame = 150
+start_frame = 175
 output_dir = "./test_results/mc_analysis/blue_angels_formation/"
 if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
 
 # Number of Monte Carlo runs
-num_runs = 100
+num_runs = 50
 
 # Define distributions for each factor
 distributions = {
-    "max_corners":        lambda n: np.random.randint(2000, 5000, n),             # Uniform integer [500, 5000]
+    "max_corners":        lambda n: np.random.randint(2500, 5000, n),             # Uniform integer [500, 5000]
     "kernel_size":        lambda n: np.random.choice([3, 5, 7], n),     # Odd integers [3, 5, 7]
     "gaussian_sigma":     lambda n: np.round(np.random.uniform(0, 2, n), 6),     # Uniform float [0, 2]
-    "corner_sensitivity": lambda n: np.round(np.random.uniform(0.005, 0.0001, n), 6), # Uniform float [0.005, 0.0001]
+    "corner_sensitivity": lambda n: np.round(np.random.uniform(0.005, 0.0005, n), 6), # Uniform float [0.005, 0.0001]
     "minimum_distance":   lambda n: np.random.randint(1, 6, n),                 # Uniform float [1, 5]
-    "reinit_threshold":   lambda n: np.random.randint(5, 25, n),                 # Uniform float [0.01, 0.5]
+    "reinit_threshold":   lambda n: np.random.randint(10, 25, n),                 # Uniform float [0.01, 0.5]
     "window_size":        lambda n: np.random.choice([3, 5, 7], n),    # Odd integers [3, 5, 7]
     "error_threshold":    lambda n: np.round(np.random.uniform(0.7, 0.9, n), 6), # Uniform float [0.7, 0.9]
     "pyrdown_level":      lambda n: np.random.choice([2, 3, 4], n)                   # Uniform integer [2, 4]
@@ -118,3 +118,7 @@ plot_mc_error(mc_frames, mc_lk_recs, "Recall", output_file=output_file14, title=
 for key, vals in mc_data.items():
     plot_error(np.arange(0, num_runs), vals, f"{key}", output_file=f"{output_dir}/mc_{key}.png", title=f"{key}")
     
+    
+#TODO
+# Store average results in a dataframe and write to csv
+# Determine the correlation between variables to see which is most sensitive

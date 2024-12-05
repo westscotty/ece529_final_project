@@ -6,10 +6,10 @@ import sys
 from copy import copy
 import argparse
 from utils import debug_messages, coordinate_density_filter, mae, psnr, ssim
-from plot_utils import make_comparison_image, draw_corner_markers
+from plot_utils import make_comparison_image, draw_corner_markers, red, green, blue
 from image_utils import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
-from video_utils import reshape_points
+from video_utils import reshape_points, crop_frame, get_crop_info
 
 gradient = { 'cv2': sobel_operator_cv2,
                     'numpy': sobel_operator_numpy
@@ -168,16 +168,17 @@ if __name__ == "__main__":
             os.makedirs(os.path.dirname(output_image))
 
     # Load image as grayscale
-    img = cv2.imread(args.input_image, cv2.IMREAD_GRAYSCALE)
+    img = cv2.imread(args.input_image)
+    height, width, __ = img.shape
+    crop_size, crop_x, crop_y = get_crop_info(width, height)
+    img = crop_frame(img, crop_size, crop_x, crop_y)
     img = cv2.pyrDown(img)
     # img = histogram_equalization(img)
-    height, width = img.shape
-    # img = cv2.pyrDown(img)
 
-
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Call the Shi-Tomasi corner detection function
     corners, corners_cv2 = shi_tomasi_corners(
-        img=img,
+        img=gray_img,
         ksize=args.kernel_size,
         max_corners=args.max_corners,
         method=args.method,
@@ -190,13 +191,15 @@ if __name__ == "__main__":
 
     # Copy Image then draw corners on the BGR converted
     result_img = img.copy()
-    result_img_bgr = cv2.cvtColor(result_img, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
-    result_img_bgr = draw_corner_markers(result_img_bgr, np.squeeze(corners), (0, 255, 0))
+    # result_img_bgr = cv2.cvtColor(result_img)  # Convert to color for visualization
+    result_img_bgr = cv2.cvtColor(result_img, cv2.COLOR_BGR2RGB)
+    result_img_bgr = draw_corner_markers(result_img_bgr, np.squeeze(corners), color=blue, size=3)
     
     # Copy Image then draw corners on the BGR converted
     result_img2 = img.copy()
-    result_img_bgr2 = cv2.cvtColor(result_img2, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
-    result_img_bgr2 = draw_corner_markers(result_img_bgr2, np.squeeze(corners_cv2), (255, 0, 0))
+    # result_img_bgr2 = cv2.cvtColor(result_img2, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
+    result_img_bgr2 = cv2.cvtColor(result_img2, cv2.COLOR_BGR2RGB)
+    result_img_bgr2 = draw_corner_markers(result_img_bgr2, np.squeeze(corners_cv2), color=blue, size=3)
 
     # Print corners if the flag is set
     if args.debug:
@@ -216,8 +219,8 @@ if __name__ == "__main__":
     # result_img_bgr = draw_clusters_on_image(result_img_bgr, corner_groups)
 
     # Display and save the image with corners
-    make_comparison_image([result_img_bgr, result_img_bgr2], ['Shi-tomasi Corners from Scratch', 'Shi-tomasi Corners from OpenCV'], "Shi-Tomasi Corners")
+    make_comparison_image([result_img_bgr, result_img_bgr2], ['Shi-tomasi Corners from Scratch', 'Shi-tomasi Corners from OpenCV'], "Shi-Tomasi Corners", output_file=output_image)
     
-    if args.output_image:
-        plt.savefig(output_image)
+    # if args.output_image:
+    #     plt.savefig(output_image)
         

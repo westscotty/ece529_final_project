@@ -1,7 +1,6 @@
 - Add histogram equalization 
 - add image sharpening
 - add image blurring
-#- add max suppression like routine to filter out points that are too close to other points
 - add bounding box drawer
 - low pass filter?
 - high pass filter?

@@ -1,6 +1,7 @@
 # ECE 529 Project Time Log
 
 ## Proposal
+
 - **2024-09-16**: Project brainstorming (1 hour)
 - **2024-09-18**: Project brainstorming (1.5 hours)
 - **2024-09-20**: Worked on initial proposal ideas (2 hours)
@@ -44,7 +45,7 @@
 - **2024-12-03**: Developed method for output images to be in quadrants (3 hours)
   - Developed MC analaysis script for evaluating performance overall(3 hours)
   - Developed psnr, mae, ssim, precison, and recall methods for images to be evaluated against each other (3.5 hours)
-- **2024-12-04**: Connected mc script to lucas kanade script in order to generate data and plots that show the results from each seed compared to the others (3 hours)
+- **2024-12-04**: Connected mc script to lucas kanade script in order to generate data and plots that show the results from each seed compared to the others (3.5 hours)
   - Also updated time_keeping sheet
 
 ## TODO

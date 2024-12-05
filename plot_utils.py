@@ -28,10 +28,11 @@ def make_comparison_image(images, titles, suptitle, output_file=None):
     plt.figure(figsize=(12, 8))
     # plt.suptitle(suptitle)
     for i, image in enumerate(images):
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         # plt.axis('off')
         plt.subplot(1, n, i+1)
         plt.title(titles[i])
-        plt.imshow(images[i], cmap='gray')
+        plt.imshow(images[i])
     if output_file:
         plt.savefig(output_file, bbox_inches='tight', pad_inches=0.1)
     else:
@@ -40,7 +41,7 @@ def make_comparison_image(images, titles, suptitle, output_file=None):
         
 def write_image(image, suptitle, output_file):
     
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     # Display and save the image with corners
     plt.figure(figsize=(12, 8))
     plt.suptitle(suptitle)

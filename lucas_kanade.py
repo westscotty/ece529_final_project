@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import shi_tomasi_corners as stc
 from utils import debug_messages, mae, psnr, ssim, precision, recall, gather_stats
-from plot_utils import make_comparison_image, draw_corner_markers, draw_lines, group_corners_nearest_neighbors, make_bounding_boxes_from_groups, add_bounding_boxes_to_image, plot_stats, write_image, plot_error
+from plot_utils import draw_corner_markers, draw_lines, group_corners_nearest_neighbors, make_bounding_boxes_from_groups, add_bounding_boxes_to_image, plot_stats, write_image, plot_error
 import video_utils as vid
 from copy import copy
 import argparse
@@ -168,8 +168,8 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
     points_prev_0, points_prev_0_cv2 = stc.shi_tomasi_corners(gray_first_frame, **feature_params)
     
     ## Write first frame to output video
-    first_frame_tl = draw_corner_markers(first_frame.copy(), np.squeeze(points_prev_0), vid.blue)  # blue markers
-    first_frame_tr = draw_corner_markers(first_frame.copy(), np.squeeze(points_prev_0_cv2), vid.blue)  # blue markers
+    first_frame_tl = draw_corner_markers(first_frame.copy(), np.squeeze(points_prev_0), vid.red)  # red markers
+    first_frame_tr = draw_corner_markers(first_frame.copy(), np.squeeze(points_prev_0_cv2), vid.red)  # red markers
     first_frame_bl = first_frame.copy()
     first_frame_br = first_frame.copy()
     top_half = np.hstack((first_frame_tl, first_frame_tr))
@@ -206,8 +206,8 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
 
         # Create corner videos quadrants
         # top half is left: numpy corners detected, right: cv2.goodFeaturesToTrack 
-        frame_tl = draw_corner_markers(frame.copy(), np.squeeze(points_prev), vid.blue)  # blue markers
-        frame_tr = draw_corner_markers(frame.copy(), np.squeeze(points_prev_cv2), vid.blue)  # blue markers
+        frame_tl = draw_corner_markers(frame.copy(), np.squeeze(points_prev), vid.red)  # red markers
+        frame_tr = draw_corner_markers(frame.copy(), np.squeeze(points_prev_cv2), vid.red)  # red markers
         top_half = np.hstack((frame_tl, frame_tr))
         frame_bl = frame.copy()
         frame_br = frame.copy()
@@ -219,7 +219,8 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
             attempted_cv2 = 1
         else:
             ## Reinitialize points if few points remain or were lost
-            frame_br = draw_corner_markers(frame_br, np.squeeze(points_prev_0_cv2), vid.green)
+            if not type(points_prev_0_cv2) == type(None):
+                frame_br = draw_corner_markers(frame_br, np.squeeze(points_prev_0_cv2), vid.green)
             frame_br = draw_corner_markers(frame_br, np.squeeze(points_prev_cv2), vid.red)
             points_prev_0_cv2 = np.append(points_prev_0_cv2, points_prev_cv2, axis=0)
             reinit_cv2 = 1
@@ -231,7 +232,8 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
             attempted = 1
         else:
             ## Reinitialize points if few points remain or were lost
-            frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev_0), vid.green)
+            if not type(points_prev_0) == type(None):
+                frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev_0), vid.green)
             frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev), vid.red)
             points_prev_0 = np.append(points_prev_0, points_prev, axis=0)
             reinit = 1
