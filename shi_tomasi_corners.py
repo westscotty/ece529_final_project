@@ -52,7 +52,7 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
         out_file = None
         if plots_dir:
             out_file = f"{plots_dir}/gradients_sample.png"
-        make_comparison_image([test_Ix2, test_Iy2], ['Sobel Ix', 'Sobel Iy'], "Sobel Kernels", out_file)
+        make_comparison_image([test_Ix2, test_Iy2], ['Sobel Ix', 'Sobel Iy'], "Sobel Kernels", out_file, change_color=False)
         
     # Compute elements of the covariance matrix
     # Ixx: Represents the gradient squared in the x-direction, emphasizing how the intensity changes horizontally.
@@ -101,9 +101,16 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
             """)
 
         out_file = None
+        out_file2 = None
         if plots_dir:
             out_file = f"{plots_dir}/gaussian_low_pass_filters.png"
-        make_comparison_image([test_Ixx2, test_Iyy2, test_Ixy2], ['Gaussian Ixx', 'Gaussian Iyy', 'Gaussian Ixy'], "Gaussian Low Pass Filters", out_file)
+            out_file2 = f"{plots_dir}/pre_gaussian_low_pass_filters.png"
+        else:
+            out_file = f"test_results/plots/gaussian_low_pass_filters.png"
+            out_file2 = f"test_results/plots/pre_gaussian_low_pass_filters.png"
+            
+        make_comparison_image([test_Ixx2, test_Iyy2, test_Ixy2], ['Gaussian LPF Ixx', 'Gaussian LPF Iyy', 'Gaussian LPF Ixy'], "Gaussian Low Pass Filters", out_file, change_color=False)
+        make_comparison_image([Ixx0, Iyy0, Ixy0], ['Ixx', 'Iyy', 'Ixy'], "Gaussian Low Pass Filters", out_file2, change_color=False)
 
         
     # Compute the minimum eigenvalue (Shi-Tomasi score) for each pixel

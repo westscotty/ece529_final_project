@@ -21,18 +21,21 @@ def draw_lines(img, corner1, corner2, color):
     cv2.line(img, corner1, corner2, color, 2)
     return img
 
-def make_comparison_image(images, titles, suptitle, output_file=None):
+def make_comparison_image(images, titles, suptitle, output_file=None, change_color=False):
     
     # Display and save the image with corners
     n = len(images)
     plt.figure(figsize=(12, 8))
     # plt.suptitle(suptitle)
     for i, image in enumerate(images):
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        # plt.axis('off')
+
         plt.subplot(1, n, i+1)
         plt.title(titles[i])
-        plt.imshow(images[i])
+        if change_color:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            plt.imshow(images[i])
+        else:
+           plt.imshow(images[i], cmap='gray') 
     if output_file:
         plt.savefig(output_file, bbox_inches='tight', pad_inches=0.1)
     else:

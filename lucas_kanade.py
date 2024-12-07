@@ -193,12 +193,12 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
         
         # calculate new corners each frame, only use if significant loss detected
         if save_samples and sample_count < 1:
-            debug = True
+            feature_params['debug'] = True
             debug_plots_dir = plots_dir
         else:
-            debug = False
+            feature_params['debug'] = False
             debug_plots_dir = None
-        points_prev, points_prev_cv2 = stc.shi_tomasi_corners(gray_frame, debug=debug, plots_dir=debug_plots_dir, **feature_params)
+        points_prev, points_prev_cv2 = stc.shi_tomasi_corners(gray_frame, plots_dir=debug_plots_dir, **feature_params)
         stc_corners_cv2.append(len(points_prev_cv2)) # Gather stats
         stc_corners.append(len(points_prev)) # Gather stats
         # points_prev = vid.reshape_points(corners)
