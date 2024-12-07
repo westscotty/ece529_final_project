@@ -10,54 +10,73 @@ normalize_image = lambda x : cv2.normalize(x, None, 0, 255, cv2.NORM_MINMAX)
 ##########################################################################################
 ### Soble operator creation for calculating gradients in x and y directions of image ###
 
-def create_sobel_operator(ksize, xy):
-    """Creates the needed sobel convolutional kernel based in input ksize."""
+# def create_sobel_operator(ksize, xy):
+#     """Creates the needed sobel convolutional kernel based in input ksize."""
     
-    if ksize == 3:
-        sobel_x = np.array([[-1, 0, 1],
-                            [-2, 0, 2],
-                            [-1, 0, 1]], dtype=np.float32)
+#     if ksize == 3:
+#         sobel_x = np.array([[-1, 0, 1],
+#                             [-2, 0, 2],
+#                             [-1, 0, 1]], dtype=np.float32)
 
-        sobel_y = np.array([[1, 2, 1],
-                            [0, 0, 0],
-                            [-1, -2, -1]], dtype=np.float32)
+#         sobel_y = np.array([[1, 2, 1],
+#                             [0, 0, 0],
+#                             [-1, -2, -1]], dtype=np.float32)
 
-    elif ksize == 5:
-        sobel_x = np.array([[-2, -1, 0, 1, 2],
-                            [-4, -2, 0, 2, 4],
-                            [-8, -4, 0, 4, 8],
-                            [-4, -2, 0, 2, 4],
-                            [-2, -1, 0, 1, 2]], dtype=np.float32)
+#     elif ksize == 5:
+#         sobel_x = np.array([[-2, -1, 0, 1, 2],
+#                             [-4, -2, 0, 2, 4],
+#                             [-8, -4, 0, 4, 8],
+#                             [-4, -2, 0, 2, 4],
+#                             [-2, -1, 0, 1, 2]], dtype=np.float32)
 
-        sobel_y = np.array([[2, 4, 8, 4, 2],
-                            [1, 2, 4, 2, 1],
-                            [0, 0, 0, 0, 0],
-                            [-1, -2, -4, -2, -1],
-                            [-2, -4, -8, -4, -2]], dtype=np.float32)
+#         sobel_y = np.array([[2, 4, 8, 4, 2],
+#                             [1, 2, 4, 2, 1],
+#                             [0, 0, 0, 0, 0],
+#                             [-1, -2, -4, -2, -1],
+#                             [-2, -4, -8, -4, -2]], dtype=np.float32)
 
-    elif ksize == 7:
-        sobel_x = np.array([[-3, -2, -1, 0, 1, 2, 3],
-                            [-6, -5, -4, 0, 4, 5, 6],
-                            [-12, -10, -8, 0, 8, 10, 12],
-                            [-6, -5, -4, 0, 4, 5, 6],
-                            [-3, -2, -1, 0, 1, 2, 3]], dtype=np.float32)
+#     elif ksize == 7:
+#         sobel_x = np.array([[-3, -2, -1, 0, 1, 2, 3],
+#                             [-6, -5, -4, 0, 4, 5, 6],
+#                             [-12, -10, -8, 0, 8, 10, 12],
+#                             [-6, -5, -4, 0, 4, 5, 6],
+#                             [-3, -2, -1, 0, 1, 2, 3]], dtype=np.float32)
 
-        sobel_y = np.array([[3, 6, 12, 6, 3, 0, 0],
-                            [2, 5, 10, 5, 2, 0, 0],
-                            [1, 4, 8, 4, 1, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0],
-                            [-1, -4, -8, -4, -1, 0, 0],
-                            [-2, -5, -10, -5, -2, 0, 0],
-                            [-3, -6, -12, -6, -3, 0, 0]], dtype=np.float32)
+#         sobel_y = np.array([[3, 6, 12, 6, 3, 0, 0],
+#                             [2, 5, 10, 5, 2, 0, 0],
+#                             [1, 4, 8, 4, 1, 0, 0],
+#                             [0, 0, 0, 0, 0, 0, 0],
+#                             [-1, -4, -8, -4, -1, 0, 0],
+#                             [-2, -5, -10, -5, -2, 0, 0],
+#                             [-3, -6, -12, -6, -3, 0, 0]], dtype=np.float32)
 
-    else:
-        sys.exit("Only sizes 3, 5, and 7 are supported.")
+#     else:
+#         sys.exit("Only sizes 3, 5, and 7 are supported.")
 
-    # breakpoint()
-    if xy == 0:
-        return sobel_x
-    else:
-        return sobel_y
+#     # breakpoint()
+#     if xy == 0:
+#         return sobel_x
+#     else:
+#         return sobel_y
+
+def create_sobel_operator(ksize, xy):
+
+    if ksize % 2 == 0:
+        raise ValueError("Kernel size must be an odd number.")
+    
+    # Create the base grid
+    mid = ksize // 2
+    x, y = np.meshgrid(np.arange(-mid, mid + 1), np.arange(-mid, mid + 1))
+    
+    # Sobel kernel calculations
+    kx = x / (x**2 + y**2 + 1e-6)  # Small value added to avoid division by zero
+    ky = y / (x**2 + y**2 + 1e-6)
+    
+    # Normalize kernels
+    kx = kx / np.sum(np.abs(kx)) if np.sum(np.abs(kx)) != 0 else kx
+    ky = ky / np.sum(np.abs(ky)) if np.sum(np.abs(ky)) != 0 else ky
+    
+    return kx if xy == 0 else ky
 
 @jit(nopython=True)
 def apply_convolution(image, kernel):

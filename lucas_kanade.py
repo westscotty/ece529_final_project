@@ -206,8 +206,8 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
 
         # Create corner videos quadrants
         # top half is left: numpy corners detected, right: cv2.goodFeaturesToTrack 
-        frame_tl = draw_corner_markers(frame.copy(), np.squeeze(points_prev), vid.red)  # red markers
-        frame_tr = draw_corner_markers(frame.copy(), np.squeeze(points_prev_cv2), vid.red)  # red markers
+        frame_tl = draw_corner_markers(frame.copy(), np.squeeze(points_prev).reshape(len(points_prev), 2), vid.red)  # red markers
+        frame_tr = draw_corner_markers(frame.copy(), np.squeeze(points_prev_cv2).reshape(len(points_prev_cv2), 2), vid.red)  # red markers
         top_half = np.hstack((frame_tl, frame_tr))
         frame_bl = frame.copy()
         frame_br = frame.copy()
@@ -220,8 +220,8 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
         else:
             ## Reinitialize points if few points remain or were lost
             if not type(points_prev_0_cv2) == type(None):
-                frame_br = draw_corner_markers(frame_br, np.squeeze(points_prev_0_cv2), vid.green)
-            frame_br = draw_corner_markers(frame_br, np.squeeze(points_prev_cv2), vid.red)
+                frame_br = draw_corner_markers(frame_br, np.squeeze(points_prev_0_cv2).reshape(len(points_prev_0_cv2), 2), vid.green)
+            frame_br = draw_corner_markers(frame_br, np.squeeze(points_prev_cv2).reshape(len(points_prev_cv2), 2), vid.red)
             points_prev_0_cv2 = np.append(points_prev_0_cv2, points_prev_cv2, axis=0)
             reinit_cv2 = 1
         
@@ -233,8 +233,8 @@ def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_ra
         else:
             ## Reinitialize points if few points remain or were lost
             if not type(points_prev_0) == type(None):
-                frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev_0), vid.green)
-            frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev), vid.red)
+                frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev_0).reshape(len(points_prev_0), 2), vid.green)
+            frame_bl = draw_corner_markers(frame_bl, np.squeeze(points_prev).reshape(len(points_prev), 2), vid.red)
             points_prev_0 = np.append(points_prev_0, points_prev, axis=0)
             reinit = 1
         

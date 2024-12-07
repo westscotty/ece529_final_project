@@ -2,9 +2,6 @@
 
 \usepackage{amsmath, amssymb, amsfonts}
 \usepackage{graphicx}
-\usepackage{geometry}
-\geometry{a4paper, margin=1in}
-\usepackage{booktabs}
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{cite}
@@ -195,17 +192,17 @@ The following parameters were configured for the implementation:
 The algorithm uses OpenCV's \texttt{cv2.goodFeaturesToTrack} function for efficient corner detection as the baseline. Additionally, a custom implementation was developed for comparison, leveraging NumPy to compute the structure tensor and eigenvalues directly.
 To enhance robustness, detected corners were refined using a scaled-down version of the image, ensuring that high-quality corners were retained while minimizing noise. 
 
-Once the image was passed to the Shi-Tomasi routine (see code list \ref{lst:shi-tomasi}) routine with the other design parameters defined, the image would be converted to grayscale if not already, then the image would be convolved with a Sobel Kernel in both the x and y directions to calculate Ix and Iy (see Figure \ref{fig:sobel_gradient}). 
+Once the image was passed to the Shi-Tomasi routine (see code list \ref{lst:shi-tomasi}) routine with the other design parameters defined, the image would be converted to grayscale if not already, then the image would be convolved with a Sobel kernel in both the x and y directions to calculate Ix and Iy (see Figure \ref{fig:sobel_gradient}). 
 
-Following these new convolved images, the componets of the structure tensor (M) could be created, with Ixx showing the horizontal intensity change, Iyy the vertical intensity change, and Ixy the interaction between the directional intensity changes (see Figure \ref{fig:pre_gaussian_lpf}). These new images (matrices) are then sent through a low pass gaussian filter to reduces noise and minor variations, and overall smooth the image (see Figure \ref{fig:gaussian_lpf}). 
+Following these new convolved images, the components of the structure tensor (M) could be created, with Ixx showing the horizontal intensity change, Iyy the vertical intensity change, and Ixy the interaction between the directional intensity changes (see Figure \ref{fig:pre_gaussian_lpf}). These new images (matrices) are then sent through a low pass gaussian filter to reduces noise and minor variations, and overall smooth the image (see Figure \ref{fig:gaussian_lpf}). 
 
-From there the minimum eigenvalues for each pixel are calculated (Shi-Tomasi score), and in tandem with the determinant of the structure tensor and a sensitivty response, quality corner candidates can be created for the image. These corner candidates are then sent sorted by strongest response, the sent through a density filter.
+From there the minimum eigenvalues for each pixel are calculated (Shi-Tomasi score), and in tandem with the determinant of the structure tensor and a sensitivity response, quality corner candidates can be created for the image. These corner candidates are then sent sorted by strongest response, the sent through a density filter.
 
-Writing the convoluton algorithm in two dimensions was a challenge not due to the complexity of the problem, but due to the length of time is takes to have numpy loop over the image with a kernel. After research and testing, the Numba library for Python was used to accelerate the code, allowing the convolutions to take place rapidly, allowing the development of the this part of the project to move forward (see code list \ref{lst:convolution}). The convolution routine that was written handles any kernel with image, as long as the kernel is smaller than the image itself. The image is zero padded always, to ensure that the spatial dimensions of the image is preserved, border pixel information isn't lost, and also aid in keeping the filters with a symmetric operation. The same convolution routine is used for both the Sobel Operator and the Gaussian Low Pass Filter steps, making it generically usable my other routines written for various image operations and filters.
+Writing the convolution algorithm in two dimensions was a challenge not due to the complexity of the problem, but due to the length of time is takes to have NumPy loop over the image with a kernel. After research and testing, the Numba library for Python was used to accelerate the code, allowing the convolutions to take place rapidly, allowing the development of the this part of the project to move forward (see code list \ref{lst:convolution}). The convolution routine that was written handles any kernel with image, as long as the kernel is smaller than the image itself. The image is zero padded always, to ensure that the spatial dimensions of the image is preserved, border pixel information isn't lost, and also aid in keeping the filters with a symmetric operation. The same convolution routine is used for both the Sobel Gradient (using a Sobel kernel, see code list \ref{lst:sobel-kernel}) and the Gaussian Low Pass Filter (using a Gaussian kernel, see code list \ref{lst:gaussian-kernel}) steps, making it generically usable my other routines written for various image operations and filters.
 
-After the various image operations and compuations were completed, it made sense to ensure that points were not overlapping. Typically using a max-suppression like algorithm could work for this, instead a filter was written to simply only allow points within a specified minimum pixel distance to pass through. This filter also ensured that no points along the edge of the image were detected. The minimum distance constraint was enforced to prevent clustering of corners in regions with high texture. See code list \ref{lst:corner_filter} for code implementation.
+After the various image operations and computations were completed, it made sense to ensure that points were not overlapping. Typically using a max-suppression like algorithm could work for this, instead a filter was written to simply only allow points within a specified minimum pixel distance to pass through. This filter also ensured that no points along the edge of the image were detected. The minimum distance constraint was enforced to prevent clustering of corners in regions with high texture. See code list \ref{lst:corner_filter} for code implementation.
 
-Work was started on introducing more image operations into the custom NumPy algorith utilizing histogram equalizations and other filter types such as a median filter or high pass filter. Basic code was developed to implement these ideas, but the time was not there to assess. These methods can be effective in helping to improve or degrade contrast in the image
+Work was started on introducing more image operations into the custom NumPy algorithm utilizing histogram equalization and other filter types such as a median filter or high pass filter. Basic code was developed to implement these ideas, but the time was not there to assess. These methods can be effective in helping to improve or degrade contrast in the image
 \bigskip
 
 \subsubsection{Visualization}
@@ -215,7 +212,7 @@ Many hours were spent on plotting methods for grouping corner points after getti
 \bigskip
 
 \subsubsection{Performance Comparison}
-A comparison between the custom implementation and OpenCV's functions revealed that the custom numpy approach provided similar accuracy while allowing greater flexibility in parameter tuning. OpenCV's implementation, however, demonstrated superior computational efficiency, even after optimizing the code using advanced python libraries (Numba) to accelerate specific sections of code. For performance comparisons, a few metrics were employed to quantify the results between the NumPy and OpenCV implementations.
+A comparison between the custom implementation and OpenCV's functions revealed that the custom NumPy approach provided similar accuracy while allowing greater flexibility in parameter tuning. OpenCV's implementation, however, demonstrated superior computational efficiency, even after optimizing the code using advanced python libraries (Numba) to accelerate specific sections of code. For performance comparisons, a few metrics were employed to quantify the results between the NumPy and OpenCV implementations.
 
 \begin{itemize}
     \item \textbf{Number of Corners:} The number of corners actually produced by the algorithm (see Figure \ref{fig:stc-corners})
@@ -225,13 +222,13 @@ A comparison between the custom implementation and OpenCV's functions revealed t
     \item \textbf{Precision and Recall:} Measures the accuracy of point matching between the detected corners in the both images (see Figures \ref{fig:stc-prec} and \ref{fig:stc-rec})
 \end{itemize}
 
-Overall when using these metrics, it was clear that both algorithms worked well enough to detect corners usable in the Lucas-Kanade optical flow problem. See Figures \ref{fig:stc-corners} through \ref{fig:stc-rec} for example output produced when processing a video of Blue Angels Fighters flying in their diamon formation.
+Overall when using these metrics, it was clear that both algorithms worked well enough to detect corners usable in the Lucas-Kanade optical flow problem. See Figures \ref{fig:stc-corners} through \ref{fig:stc-rec} for example output produced when processing a video of Blue Angels Fighters flying in their diamond formation.
 
 \onecolumn
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.6\linewidth]{images/gradients_sample.png}
-    \caption{Example of what a sobel kernel applied via convolution to an image in both x then y directions.}
+    \caption{Example of what a Sobel kernel applied via convolution to an image in both x then y directions.}
     \label{fig:sobel_gradient}
 \end{figure}
 
@@ -252,14 +249,14 @@ Overall when using these metrics, it was clear that both algorithms worked well 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.95\linewidth]{images/shi_tomasi_corners.png}
-    \caption{Detected corners using the Shi-Tomasi method. Left image is pure Numpy implementation, right image is OpenCV's goodFeaturesToTrack method. Red circles indicate detected corners overlaid on the input image (sensitivity is 0.04, max corners is 200).}
+    \caption{Detected corners using the Shi-Tomasi method. Left image is pure NumPy implementation, right image is OpenCV's goodFeaturesToTrack method. Red circles indicate detected corners overlaid on the input image (sensitivity is 0.04, max corners is 200).}
     \label{fig:shi_tomasi_results}
 \end{figure}
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.95\linewidth]{images/shi_tomasi_corners_2.png}
-    \caption{Detected corners using the Shi-Tomasi method. Left image is pure Numpy implementation, right image is OpenCV's goodFeaturesToTrack method. Red circles indicate detected corners overlaid on the input image (sensitivity is 0.004, max corners is 2000).}
+    \caption{Detected corners using the Shi-Tomasi method. Left image is pure NumPy implementation, right image is OpenCV's goodFeaturesToTrack method. Red circles indicate detected corners overlaid on the input image (sensitivity is 0.004, max corners is 2000).}
     \label{fig:shi_tomasi_results2}
 \end{figure}
 \twocolumn
@@ -281,14 +278,14 @@ Overall when using these metrics, it was clear that both algorithms worked well 
 \begin{figure}[t]
     \centering
     \includegraphics[width=\linewidth]{images/stc_psnr.png}
-    \caption{Peak signal to noise ratio betwen images with corners plotted.}
+    \caption{Peak signal to noise ratio between images with corners plotted.}
     \label{fig:stc-psnr}
 \end{figure}
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=\linewidth]{images/stc_ssim.png}
-    \caption{Structural similarity index betwen images with corners plotted.}
+    \caption{Structural similarity index between images with corners plotted.}
     \label{fig:stc-ssim}
 \end{figure}
 
@@ -308,7 +305,7 @@ Overall when using these metrics, it was clear that both algorithms worked well 
 
 \onecolumn
 \begin{lstlisting}[style=python, caption={Shi-Tomasi Corners Function}, label={lst:shi-tomasi}]
-    def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False, plots_dir=None):
+    def shi_tomasi_corners(img, max_corners=200, ksize=3, method='NumPy', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False, plots_dir=None):
     
         height, width = img.shape
         gray = np.float32(img)
@@ -317,8 +314,8 @@ Overall when using these metrics, it was clear that both algorithms worked well 
         # Gradients highlight areas of rapid intensity change, which are corner candidates
         # Done by alculating the derivative of the intensity function
         # Compute image gradients (Ix, Iy) using Sobel filters
-        Ix = gradient['numpy'](gray.copy(), ksize, 0)
-        Iy = gradient['numpy'](gray.copy(), ksize, 1)
+        Ix = gradient['NumPy'](gray.copy(), ksize, 0)
+        Iy = gradient['NumPy'](gray.copy(), ksize, 1)
             
         # Compute elements of the covariance matrix
         # Ixx: Gradient squared in the x-direction (horizontal intensity change)
@@ -333,9 +330,9 @@ Overall when using these metrics, it was clear that both algorithms worked well 
         # This step reduces noise and minor variations in the gradient images 
         # The kernel size for the Gaussian blur is determined by ksize, which is the same as that used for the Sobel operator. 
         # The smoothing ensures that the corner response is more robust by averaging local intensity variations.
-        Ixx, sigma_xx = gaussian_low_pass['numpy'](Ixx0, ksize, sigma0)
-        Iyy, sigma_yy = gaussian_low_pass['numpy'](Iyy0, ksize, sigma0)
-        Ixy, sigma_xy = gaussian_low_pass['numpy'](Ixy0, ksize, sigma0)
+        Ixx, sigma_xx = gaussian_low_pass['NumPy'](Ixx0, ksize, sigma0)
+        Iyy, sigma_yy = gaussian_low_pass['NumPy'](Iyy0, ksize, sigma0)
+        Ixy, sigma_xy = gaussian_low_pass['NumPy'](Ixy0, ksize, sigma0)
   
         # Compute the minimum eigenvalue (Shi-Tomasi score) for each pixel
         # det_M: This computes the determinant of the covariance matrix M
@@ -398,6 +395,39 @@ Overall when using these metrics, it was clear that both algorithms worked well 
         return convolved_image
 \end{lstlisting}
 
+\begin{lstlisting}[style=python, caption={Sobel Kernel}, label={lst:sobel-kernel}]
+    def create_sobel_operator(ksize, xy):
+
+        if ksize % 2 == 0:
+            raise ValueError("Kernel size must be an odd number.")
+        
+        # Create the base grid
+        mid = ksize // 2
+        x, y = np.meshgrid(np.arange(-mid, mid + 1), np.arange(-mid, mid + 1))
+        
+        # Sobel kernel calculations
+        kx = x / (x**2 + y**2 + 1e-6)  # Small value added to avoid division by zero
+        ky = y / (x**2 + y**2 + 1e-6)
+        
+        # Normalize kernels
+        kx = kx / np.sum(np.abs(kx)) if np.sum(np.abs(kx)) != 0 else kx
+        ky = ky / np.sum(np.abs(ky)) if np.sum(np.abs(ky)) != 0 else ky
+        
+        return kx if xy == 0 else ky
+\end{lstlisting}
+
+\newpage
+\begin{lstlisting}[style=python, caption={Gaussian Kernel}, label={lst:gaussian-kernel}]
+    def gaussian_kernel(size, sigma):
+        """Generates a Gaussian kernel."""
+                
+        ax = np.linspace(-(size // 2), size // 2, size)
+        kernel_1d = np.exp(-0.5 * (ax / sigma) ** 2)
+        kernel_1d /= kernel_1d.sum()  # Normalize the kernel
+        kernel_2d = np.outer(kernel_1d, kernel_1d)
+        return kernel_2d
+\end{lstlisting}
+
 \begin{lstlisting}[style=python, caption={Corner Density Filter}, label={lst:corner_filter}]
     def coordinate_density_filter(coords, min_dist, max_corners, image_height, image_width, image_edge_threshold=5):
         # Enforce minimum distance constraint
@@ -427,7 +457,7 @@ Overall when using these metrics, it was clear that both algorithms worked well 
 
 \subsection{Lucas-Kanade Optical Flow}
 
-The Lucas-Kanade Optical Flow algorith was used for tracking feature points in a video sequence. Specically a video snippet of Blue Angels Fighter Planes. The core of the implementation is based on the pyramidal Lucas-Kanade method, which is utilized both through OpenCV's built-in function (\texttt{cv2.calcOpticalFlowPyrLK}) and a custom NumPy-based implementation (\texttt{calcOpticalFlowPyrLK\_numpy}).
+The Lucas-Kanade Optical Flow algorith was used for tracking feature points in a video sequence. Specically a video snippet of Blue Angels Fighter Planes. The core of the implementation is based on the pyramidal Lucas-Kanade method, which is utilized both through OpenCV's built-in function (\texttt{cv2.calcOpticalFlowPyrLK}) and a custom NumPy-based implementation (\texttt{calcOpticalFlowPyrLK\_NumPy}).
 
 \subsubsection{Key Parameters for Optical Flow}
 The following parameters are used to configure the optical flow algorithm:
@@ -435,13 +465,13 @@ The following parameters are used to configure the optical flow algorithm:
     \item \textbf{Window Size:} Defines the size of the window used for local flow computation.
     \item \textbf{Pyramid Level:} Controls the resolution levels in the pyramid used for coarse-to-fine tracking.
     \item \textbf{Error Threshold:} The maximum allowable error for tracking. If the error exceeds this threshold, the feature is considered lost.
-    \item \textbf{Reinitializatin Threshold:} The minimum acceptable corners persisted from the previous frame, if there aren't enough conrers to assess, then do not go through the optical flow calculations and simply detect more corners for the following frame
+    \item \textbf{Reinitialization Threshold:} The minimum acceptable corners persisted from the previous frame, if there aren't enough corners to assess, then do not go through the optical flow calculations and simply detect more corners for the following frame
 \end{itemize}
 \bigskip
 
 \subsubsection{Implementation Details}
 % \subsubsection{Optical Flow Calculation}
-The optical flow computation is performed across successive frames of a video. Given the previous and current frames, along with a set of feature points (typically corners detected in the first frame), the algorithm estimates the motion of these points. The Lucas-Kanade method computes the flow by solving the optical flow equation using image gradients. This method assumes that the flow is constant within a local neighborhood of the pixel, which is a fundamental assumption of the method.
+The optical flow computation is performed across successive frames of a video. Given the previous and current frames, along with a set of feature points (typically corners detected in the first frame), the algorithm estimates the motion of these points. The Lucas-Kanade method computes the flow by solving the optical flow equation using image gradients. This method assumes that the flow is constant within a local neighborhood (region) of the pixel, which is a fundamental assumption of the method.
 
 % \subsubsection{Pyramidal Representation}
 To handle larger motions and improve performance, we use an image pyramid. The images are downscaled multiple times to create a series of progressively lower-resolution images. Flow is computed from the highest (smallest) resolution up to the original resolution. This approach helps in capturing large displacements efficiently.
@@ -453,7 +483,7 @@ For each pyramid level, the flow is calculated by solving the system of equation
 The optical flow is first computed at the smallest resolution (top of the pyramid), and the computed flow is propagated to larger resolutions by scaling the flow and adjusting the points accordingly. This multi-level approach allows for better handling of large motions.
 
 % \subsubsection{Flow Calculation Using NumPy and OpenCV}
-The function \texttt{calcOpticalFlowPyrLK\_numpy} (see code list \ref{lst:calcOpticalFlowPyrLK}) is the custom NumPy-based implementation of the pyramidal Lucas-Kanade method, while \texttt{cv2.calcOpticalFlowPyrLK} uses OpenCV's optimized implementation. Both functions follow the same basic structure but differ in implementation. The NumPy version directly computes gradients and solves the flow equations, while OpenCV uses highly optimized C++ functions for these operations.
+The function \texttt{calcOpticalFlowPyrLK\_NumPy} (see code list \ref{lst:calcOpticalFlowPyrLK}) is the custom NumPy-based implementation of the pyramidal Lucas-Kanade method, while \texttt{cv2.calcOpticalFlowPyrLK} uses OpenCV's optimized implementation. Both functions follow the same basic structure but differ in implementation. The NumPy version directly computes gradients and solves the flow equations, while OpenCV uses highly optimized C++ functions for these operations.
 
 % \subsubsection{Point Tracking}
 At each frame, the feature points are tracked from their position in the previous frame to their new position in the current frame. The \texttt{validate\_points} function (see code list \ref{lst:valpoints}) ensures that only valid points are kept (i.e., points that are successfully tracked). It checks the tracking status (\texttt{st}) and the error (\texttt{err}) against predefined thresholds to filter out unreliable tracks.
@@ -471,7 +501,7 @@ The tracked points are visually represented in a video where:
     \item The bottom-left quadrant shows the points tracked by the NumPy-based Lucas-Kanade method
     \item The bottom-right quadrant shows the points tracked by OpenCV Lucas-Kanade method
 \end{itemize}
-The blue points are simply the Shi-Tomasi corners. The green points are considered good points tracked from one the previous frame to the current frame, and the red points are new corners added to the list of viable points for the optical flow calculations based on the reinitalization criteria. Figures \ref{fig:sample_1} through \ref{fig:sample_5} show a 5-frame sequence of corners being detected, and persisting over several frames, with many corners falling away and new corners being initizalized.
+The red points are simply the Shi-Tomasi corners (upper half of the images). The green points are considered good points tracked from one the previous frame to the current frame, and the red points are new corners added to the list of viable points for the optical flow calculations based on the reinitalization criteria. Figures \ref{fig:sample_1} through \ref{fig:sample_5} show a 5-frame sequence of corners being detected, and persisting over several frames, with many corners falling away and new corners being initizalized.
 \bigskip
 
 \subsubsection{Handling Edge Cases}
@@ -493,7 +523,7 @@ During the processing of the video, the script keeps track of the number of feat
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.8\linewidth]{images/sample_image_0.png}
-    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted bewteen the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
+    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted between the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
     \label{fig:sample_1}
 \end{figure}
 
@@ -501,14 +531,14 @@ During the processing of the video, the script keeps track of the number of feat
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\linewidth]{images/sample_image_1.png}
-    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted bewteen the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
+    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted between the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
     \label{fig:sample_2}
 \end{figure}
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\linewidth]{images/sample_image_2.png}
-    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted bewteen the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
+    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted between the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
     \label{fig:sample_3}
 \end{figure}
 
@@ -516,7 +546,7 @@ During the processing of the video, the script keeps track of the number of feat
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\linewidth]{images/sample_image_3.png}
-    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted bewteen the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
+    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted between the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
     \label{fig:sample_4}
 \end{figure}
 \twocolumn
@@ -525,7 +555,7 @@ During the processing of the video, the script keeps track of the number of feat
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\linewidth]{images/sample_image_4.png}
-    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted bewteen the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
+    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted between the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
     \label{fig:sample_5}
 \end{figure}
 \twocolumn
@@ -561,14 +591,14 @@ During the processing of the video, the script keeps track of the number of feat
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.9\linewidth]{images/lk_psnr.png}
-    \caption{Peak signal to noise ratio betwen images with corners plotted.}
+    \caption{Peak signal to noise ratio between images with corners plotted.}
     \label{fig:lk-psnr}
 \end{figure}
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=0.9\linewidth]{images/lk_ssim.png}
-    \caption{Structural similarity index betwen images with corners plotted.}
+    \caption{Structural similarity index between images with corners plotted.}
     \label{fig:lk-ssim}
 \end{figure}
 
@@ -590,8 +620,8 @@ During the processing of the video, the script keeps track of the number of feat
 
 
 \onecolumn
-\begin{lstlisting}[style=python, caption={\texttt{calcOpticalFlowPyrLK\_numpy}}, label={lst:calcOpticalFlowPyrLK}]
-    def calcOpticalFlowPyrLK_numpy(prev_img, curr_img, points_prev, lk_params=None, ksize=3, method='numpy'):
+\begin{lstlisting}[style=python, caption={\texttt{calcOpticalFlowPyrLK\_NumPy}}, label={lst:calcOpticalFlowPyrLK}]
+    def calcOpticalFlowPyrLK_NumPy(prev_img, curr_img, points_prev, lk_params=None, ksize=3, method='NumPy'):
 
     winSize, maxLevel, criteria = lk_params.values()
     __, max_iter, epsilon = criteria
@@ -808,78 +838,75 @@ Additional work would be on the analysis side of this project, doing a correlati
 
 
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_stc_mae.png}
     \caption{Mean absolute error between images with corners for all seeds.}
     \label{fig:mc_stc_mae}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_stc_psnr.png}
     \caption{Peak signal to noise ratio between images with corners for all seeds.}
     \label{fig:mc_stc_psnr}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_stc_ssim.png}
     \caption{Structural similarity index between images with corners for all seeds.}
     \label{fig:mc_stc_ssim}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_stc_precision.png}
     \caption{Precision calculations between all corners between algorithms (euclidean distance was used) for all seeds.}
     \label{fig:mc_stc_prec}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_stc_recall.png}
     \caption{Recall calculations between all corners between algorithms (euclidean distance was used) for all seeds.}
     \label{fig:mc_stc_rec}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_lk_mae.png}
     \caption{Mean absolute error between images with corners for all seeds.}
     \label{fig:mc_lk_mae}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_lk_psnr.png}
     \caption{Peak signal to noise ratio between images with corners for all seeds.}
     \label{fig:mc_lk_psnr}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_lk_ssim.png}
     \caption{Structural similarity index between images with corners for all seeds.}
     \label{fig:mc_lk_ssim}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_lk_precision.png}
     \caption{Precision calculations between all good corners between algorithms (euclidean distance was used) for all seeds.}
     \label{fig:mc_lk_prec}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_lk_recall.png}
     \caption{Recall calculations between all good corners between algorithms (euclidean distance was used) for all seeds.}
     \label{fig:mc_lk_rec}
 \end{figure}
-
-
-
 
 
 \newpage
@@ -899,7 +926,7 @@ For this project, all of the code has been implemented from scratch, including t
 \end{itemize}
 
 \begin{lstlisting}[style=python, caption={\texttt{monte\_carlo\_analysis.py}}, label={lst:mc}]
-    import numpy as np
+    import NumPy as np
     import lucas_kanade as lk
     import cv2
     from plot_utils import create_histogram, plot_mc_stats, plot_mc_error, plot_error
@@ -1027,7 +1054,7 @@ For this project, all of the code has been implemented from scratch, including t
 
 \begin{lstlisting}[style=python, caption={\texttt{shi\_tomasi\_corners.py}}, label={lst:stc}]
     import cv2
-    import numpy as np
+    import NumPy as np
     import matplotlib.pyplot as plt
     import os
     import sys
@@ -1035,18 +1062,18 @@ For this project, all of the code has been implemented from scratch, including t
     import argparse
     from utils import debug_messages, coordinate_density_filter, mae, psnr, ssim
     from plot_utils import make_comparison_image, draw_corner_markers, red, green, blue
-    from image_utils import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
+    from image_utils import gaussian_low_pass_cv2, gaussian_low_pass_NumPy, sobel_operator_cv2, sobel_operator_NumPy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
     from tqdm import tqdm
     from video_utils import reshape_points, crop_frame, get_crop_info
     
     gradient = { 'cv2': sobel_operator_cv2,
-                        'numpy': sobel_operator_numpy
+                        'NumPy': sobel_operator_NumPy
                       }
     gaussian_low_pass   = { 'cv2': gaussian_low_pass_cv2,
-                        'numpy': gaussian_low_pass_numpy
+                        'NumPy': gaussian_low_pass_NumPy
                       }
     
-    def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False, plots_dir=None):
+    def shi_tomasi_corners(img, max_corners=200, ksize=3, method='NumPy', sensitivity=0.04, sigma0=0, min_dist=10, debug=False, show_image=False, plots_dir=None):
         
         # Calculate image dimensions
         height, width = img.shape
@@ -1065,8 +1092,8 @@ For this project, all of the code has been implemented from scratch, including t
         if debug:
             test_Ix1 = gradient['cv2'](gray.copy(), 3, 0)
             test_Iy1 = gradient['cv2'](gray.copy(), 3, 1)
-            test_Ix2 = gradient['numpy'](gray.copy(), 3, 0)
-            test_Iy2 = gradient['numpy'](gray.copy(), 3, 1)
+            test_Ix2 = gradient['NumPy'](gray.copy(), 3, 0)
+            test_Iy2 = gradient['NumPy'](gray.copy(), 3, 1)
             mae_Ix, pnsr_Ix = mae(test_Ix1, test_Ix2), psnr(test_Ix1, test_Ix2)
             mae_Iy, pnsr_Iy = mae(test_Iy1, test_Iy2), psnr(test_Iy1, test_Iy2)
             debug_messages(f"""
@@ -1109,9 +1136,9 @@ For this project, all of the code has been implemented from scratch, including t
             test_Ixx1, sigma_xx1 = gaussian_low_pass['cv2'](Ixx0, 3, 0)
             test_Iyy1, sigma_yy1 = gaussian_low_pass['cv2'](Iyy0, 3, 0)
             test_Ixy1, sigma_xy1 = gaussian_low_pass['cv2'](Ixy0, 3, 0)
-            test_Ixx2, sigma_xx2 = gaussian_low_pass['numpy'](Ixx0, 3, 0)
-            test_Iyy2, sigma_yy2 = gaussian_low_pass['numpy'](Iyy0, 3, 0)
-            test_Ixy2, sigma_xy2 = gaussian_low_pass['numpy'](Ixy0, 3, 0)
+            test_Ixx2, sigma_xx2 = gaussian_low_pass['NumPy'](Ixx0, 3, 0)
+            test_Iyy2, sigma_yy2 = gaussian_low_pass['NumPy'](Iyy0, 3, 0)
+            test_Ixy2, sigma_xy2 = gaussian_low_pass['NumPy'](Ixy0, 3, 0)
             mae_Ixx, pnsr_Ixx = mae(test_Ixx1, test_Ixx2), psnr(test_Ixx1, test_Ixx2)
             mae_Iyy, pnsr_Iyy = mae(test_Iyy1, test_Iyy2), psnr(test_Iyy1, test_Iyy2)
             mae_Ixy, pnsr_Ixy = mae(test_Ixy1, test_Ixy2), psnr(test_Ixy1, test_Ixy2)
@@ -1180,7 +1207,7 @@ For this project, all of the code has been implemented from scratch, including t
         parser.add_argument('-img_out', '--output_image', action='store_true', required=False, help='Save output files')
         parser.add_argument('-mc', '--max_corners', type=int, default=200, required=False, help='Maximum number of corners to detect (default: 25)')
         parser.add_argument('-ks', '--kernel_size', type=int, choices=[3, 5, 7], default=3, required=False, help='Size of the Sobel kernel (3, 5, or 7, default: 3)')
-        parser.add_argument('-m', '--method', type=str, choices=['cv2', 'numpy'], default='numpy', required=False, help='Sobel operator to use (default: numpy)')
+        parser.add_argument('-m', '--method', type=str, choices=['cv2', 'NumPy'], default='NumPy', required=False, help='Sobel operator to use (default: NumPy)')
         parser.add_argument('-gs', '--gaussian_sigma', type=int, default=0, required=False, help='Sigma value for gaussian blur kernel')
         parser.add_argument('-s', '--shi_tomasi_sensitivity', type=float, default=0.04, required=False, help='Sensitivity for corner detection (default: 0.04)')
         parser.add_argument('-md', '--minimum_distance', type=int, default=10, required=False, help='Minumum distance between detected corners (used for removing oversample corners)')
@@ -1263,7 +1290,7 @@ For this project, all of the code has been implemented from scratch, including t
 
 \begin{lstlisting}[style=python, caption={\texttt{image\_utils.py}}, label={lst:iutils}]
     import cv2
-    import numpy as np
+    import NumPy as np
     import sys
     from numba import jit
     from scipy.signal import convolve2d as conv2d
@@ -1272,57 +1299,27 @@ For this project, all of the code has been implemented from scratch, including t
     normalize_image = lambda x : cv2.normalize(x, None, 0, 255, cv2.NORM_MINMAX)
     
     ##########################################################################################
-    ### Soble operator creation for calculating gradients in x and y directions of image ###
+    ### Sobel operator creation for calculating gradients in x and y directions of image ###
     
     def create_sobel_operator(ksize, xy):
-        """Creates the needed sobel convolutional kernel based in input ksize."""
+
+        if ksize % 2 == 0:
+            raise ValueError("Kernel size must be an odd number.")
         
-        if ksize == 3:
-            sobel_x = np.array([[-1, 0, 1],
-                                [-2, 0, 2],
-                                [-1, 0, 1]], dtype=np.float32)
-    
-            sobel_y = np.array([[1, 2, 1],
-                                [0, 0, 0],
-                                [-1, -2, -1]], dtype=np.float32)
-    
-        elif ksize == 5:
-            sobel_x = np.array([[-2, -1, 0, 1, 2],
-                                [-4, -2, 0, 2, 4],
-                                [-8, -4, 0, 4, 8],
-                                [-4, -2, 0, 2, 4],
-                                [-2, -1, 0, 1, 2]], dtype=np.float32)
-    
-            sobel_y = np.array([[2, 4, 8, 4, 2],
-                                [1, 2, 4, 2, 1],
-                                [0, 0, 0, 0, 0],
-                                [-1, -2, -4, -2, -1],
-                                [-2, -4, -8, -4, -2]], dtype=np.float32)
-    
-        elif ksize == 7:
-            sobel_x = np.array([[-3, -2, -1, 0, 1, 2, 3],
-                                [-6, -5, -4, 0, 4, 5, 6],
-                                [-12, -10, -8, 0, 8, 10, 12],
-                                [-6, -5, -4, 0, 4, 5, 6],
-                                [-3, -2, -1, 0, 1, 2, 3]], dtype=np.float32)
-    
-            sobel_y = np.array([[3, 6, 12, 6, 3, 0, 0],
-                                [2, 5, 10, 5, 2, 0, 0],
-                                [1, 4, 8, 4, 1, 0, 0],
-                                [0, 0, 0, 0, 0, 0, 0],
-                                [-1, -4, -8, -4, -1, 0, 0],
-                                [-2, -5, -10, -5, -2, 0, 0],
-                                [-3, -6, -12, -6, -3, 0, 0]], dtype=np.float32)
-    
-        else:
-            sys.exit("Only sizes 3, 5, and 7 are supported.")
-    
-        # breakpoint()
-        if xy == 0:
-            return sobel_x
-        else:
-            return sobel_y
-    
+        # Create the base grid
+        mid = ksize // 2
+        x, y = np.meshgrid(np.arange(-mid, mid + 1), np.arange(-mid, mid + 1))
+        
+        # Sobel kernel calculations
+        kx = x / (x**2 + y**2 + 1e-6)  # Small value added to avoid division by zero
+        ky = y / (x**2 + y**2 + 1e-6)
+        
+        # Normalize kernels
+        kx = kx / np.sum(np.abs(kx)) if np.sum(np.abs(kx)) != 0 else kx
+        ky = ky / np.sum(np.abs(ky)) if np.sum(np.abs(ky)) != 0 else ky
+        
+        return kx if xy == 0 else ky
+
     @jit(nopython=True)
     def apply_convolution(image, kernel):
         """Applies a 2D convolution to an image with the given kernel using Numba."""
@@ -1356,8 +1353,8 @@ For this project, all of the code has been implemented from scratch, including t
         
         return convolved_image
     
-    def sobel_operator_numpy(img, ksize, xy=0, scipy=False):
-        """Applies Sobel operator to compute image gradients Ix and Iy using numpy routine."""
+    def sobel_operator_NumPy(img, ksize, xy=0, scipy=False):
+        """Applies Sobel operator to compute image gradients Ix and Iy using NumPy routine."""
         
         # Sobel kernels
         sobel = create_sobel_operator(ksize, xy)
@@ -1428,8 +1425,8 @@ For this project, all of the code has been implemented from scratch, including t
         kernel_2d = np.outer(kernel_1d, kernel_1d)
         return kernel_2d
     
-    def gaussian_low_pass_numpy(img, ksize, sigma, scipy=False):
-        """Applies Gaussian blur to the provided matrices Ixx, Iyy, and Ixy using numpy routine."""
+    def gaussian_low_pass_NumPy(img, ksize, sigma, scipy=False):
+        """Applies Gaussian blur to the provided matrices Ixx, Iyy, and Ixy using NumPy routine."""
         
         if sigma == 0:
             sigma = calculate_sigma(normalize_image(img), ksize)
@@ -1499,7 +1496,7 @@ For this project, all of the code has been implemented from scratch, including t
 \begin{lstlisting}[style=python, caption={\texttt{lucas\_kanade.py}}, label={lst:lk}]
     import cv2
     import os
-    import numpy as np
+    import NumPy as np
     from tqdm import tqdm
     import shi_tomasi_corners as stc
     from utils import debug_messages, mae, psnr, ssim, precision, recall, gather_stats
@@ -1507,19 +1504,19 @@ For this project, all of the code has been implemented from scratch, including t
     import video_utils as vid
     from copy import copy
     import argparse
-    from image_utils import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
+    from image_utils import gaussian_low_pass_cv2, gaussian_low_pass_NumPy, sobel_operator_cv2, sobel_operator_NumPy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
     from tqdm import tqdm
     import gc
     
     gradient = { 'cv2': sobel_operator_cv2,
-                        'numpy': sobel_operator_numpy
+                        'NumPy': sobel_operator_NumPy
                       }
     gaussian_low_pass   = { 'cv2': gaussian_low_pass_cv2,
-                        'numpy': gaussian_low_pass_numpy
+                        'NumPy': gaussian_low_pass_NumPy
                       }
     
     # Function to calculate optical flow using pyramidal Lucas-Kanade method
-    def calcOpticalFlowPyrLK_numpy(prev_img, curr_img, points_prev, lk_params=None, ksize=3, method='numpy'):
+    def calcOpticalFlowPyrLK_NumPy(prev_img, curr_img, points_prev, lk_params=None, ksize=3, method='NumPy'):
     
         # Extract Lucas-Kanade parameters
         winSize, maxLevel, criteria = lk_params.values()
@@ -1602,7 +1599,7 @@ For this project, all of the code has been implemented from scratch, including t
     
         return points_curr, st, err
     
-    def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, lk_params=None, ksize=3, method='numpy'): 
+    def calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, lk_params=None, ksize=3, method='NumPy'): 
         # Perform optical flow using OpenCV for comparison
         points_curr, st, err = cv2.calcOpticalFlowPyrLK(prev_img, curr_img, points_prev, None, **lk_params)
         return points_curr, st, err
@@ -1651,7 +1648,7 @@ For this project, all of the code has been implemented from scratch, including t
     
     
     # Function to perform optical flow tracking on a video
-    def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_rate=30, lk_params=None, feature_params=None, reinit_threshold=50, err_thresh=0.75, start_frame=0, method='numpy', pyrdown_level=1, plots_dir="", save_samples=False):
+    def lucas_kanade_optical_flow(input_video_path, output_video_path=None, frame_rate=30, lk_params=None, feature_params=None, reinit_threshold=50, err_thresh=0.75, start_frame=0, method='NumPy', pyrdown_level=1, plots_dir="", save_samples=False):
     
         ## Load video, get grep info, setup output video
         cap, frame_width, frame_height, total_frames = vid.open_video(input_video_path)
@@ -1704,7 +1701,7 @@ For this project, all of the code has been implemented from scratch, including t
             # points_prev_cv2 = vid.reshape_points(corners_cv2)
     
             # Create corner videos quadrants
-            # top half is left: numpy corners detected, right: cv2.goodFeaturesToTrack 
+            # top half is left: NumPy corners detected, right: cv2.goodFeaturesToTrack 
             frame_tl = draw_corner_markers(frame.copy(), np.squeeze(points_prev), vid.red)  # red markers
             frame_tr = draw_corner_markers(frame.copy(), np.squeeze(points_prev_cv2), vid.red)  # red markers
             top_half = np.hstack((frame_tl, frame_tr))
@@ -1726,7 +1723,7 @@ For this project, all of the code has been implemented from scratch, including t
             
             ## Check if there are points to track
             if points_prev_0 is not None and len(points_prev_0) > reinit_threshold:
-                points_curr, st, err = calcOpticalFlowPyrLK_numpy(gray_first_frame, gray_frame, points_prev_0, method=method, lk_params=lk_params)
+                points_curr, st, err = calcOpticalFlowPyrLK_NumPy(gray_first_frame, gray_frame, points_prev_0, method=method, lk_params=lk_params)
                 frame_bl, points_prev_0, reinit = validate_points(points_prev_0, points_curr, st, err, points_prev, err_thresh, frame_bl)
                 attempted = 1
             else:
@@ -1758,7 +1755,7 @@ For this project, all of the code has been implemented from scratch, including t
             # Update the reference frame for the next iteration, and write out frame
             gray_first_frame = gray_frame.copy()
             
-            # bottom half is left: optical flow points caculated with numpy, right: cv2.calcOpticalFlowPyrLK
+            # bottom half is left: optical flow points caculated with NumPy, right: cv2.calcOpticalFlowPyrLK
             bott_half = np.hstack((frame_bl, frame_br))
             out_video.write(np.vstack((top_half, bott_half)))
             if save_samples and sample_count < 5:
@@ -1787,7 +1784,7 @@ For this project, all of the code has been implemented from scratch, including t
         parser.add_argument('-in_vid', '--input_video', type=str, required=True, help='Path to the input image file')
         parser.add_argument('-mc', '--max_corners', type=int, default=2500, required=False, help='Maximum number of corners to detect (default: 25)')
         parser.add_argument('-ks', '--kernel_size', type=int, choices=[3, 5, 7], default=3, required=False, help='Size of the Sobel kernel (3, 5, or 7, default: 3)')
-        parser.add_argument('-m', '--method', type=str, choices=['cv2', 'numpy'], default='numpy', required=False, help='Sobel operator to use (default: numpy)')
+        parser.add_argument('-m', '--method', type=str, choices=['cv2', 'NumPy'], default='NumPy', required=False, help='Sobel operator to use (default: NumPy)')
         parser.add_argument('-gs', '--gaussian_sigma', type=int, default=0, required=False, help='Sigma value for gaussian blur kernel')
         parser.add_argument('-s', '--sensitivity', type=float, default=0.001, required=False, help='Sensitivity for corner detection (default: 0.04)')
         parser.add_argument('-md', '--minimum_distance', type=int, default=5, required=False, help='Minumum distance between detected corners (used for removing oversample corners)')
@@ -1831,7 +1828,7 @@ For this project, all of the code has been implemented from scratch, including t
 
 \begin{lstlisting}[style=python, caption={\texttt{video\_utils.py}}, label={lst:vutils}]
     import cv2
-    import numpy as np
+    import NumPy as np
     from tqdm import tqdm
     import utils as utils
     import sys
@@ -1903,7 +1900,7 @@ For this project, all of the code has been implemented from scratch, including t
 \end{lstlisting}
 
 \begin{lstlisting}[style=python, caption={\texttt{plot\_utils.py}}, label={lst:putils}]
-    import numpy as np
+    import NumPy as np
     import cv2
     import matplotlib.pyplot as plt
     from scipy.spatial import KDTree
@@ -2110,7 +2107,7 @@ For this project, all of the code has been implemented from scratch, including t
     def plot_stats(frames, stat1, stat2, yaxis="Y Axis", title="", output_file=""):
         
         plt.figure(figsize=(6, 4))
-        plt.plot(frames, stat1, color='red', linewidth=3, label='Numpy')
+        plt.plot(frames, stat1, color='red', linewidth=3, label='NumPy')
         plt.plot(frames, stat2, color='green', linewidth=1.5, label='OpenCV')
         plt.xlabel('Frame ID')
         plt.ylabel(yaxis)
@@ -2169,7 +2166,7 @@ For this project, all of the code has been implemented from scratch, including t
             stat1 = stats1[i]
             stat2 = stats2[i]
             frames = all_frames[i]
-            plt.plot(frames, stat1, color='red', label=f'Numpy')
+            plt.plot(frames, stat1, color='red', label=f'NumPy')
             plt.plot(frames, stat2, color='green', label='OpenCV')
         plt.xlabel('Frame ID')
         plt.ylabel(yaxis)
@@ -2204,7 +2201,7 @@ For this project, all of the code has been implemented from scratch, including t
 \end{lstlisting}
 
 \begin{lstlisting}[style=python, caption={\texttt{utils.py}}, label={lst:utils}]
-    import numpy as np
+    import NumPy as np
     from skimage.metrics import peak_signal_noise_ratio
     import cv2
     from skimage.metrics import structural_similarity
@@ -2384,21 +2381,6 @@ For this project, all of the code has been implemented from scratch, including t
     
         return frames_, reinits, reinits_cv2, attempts, attempts_cv2, stc_corners, stc_corners_cv2, stc_maes, stc_psnrs, stc_ssims, stc_precs, stc_recs, lk_good_corners, lk_good_corners_cv2, lk_maes, lk_psnrs, lk_ssims, lk_precs, lk_recs
     
-    # # Normalize Cross-correlation (NCC)
-    # Ix_cv2_flat = Ix_cv2.flatten()
-    # Ix_numpy_flat = Ix_numpy.flatten()
-    # cosine_similarity = np.dot(Ix_cv2_flat, Ix_numpy_flat) / (
-    # np.linalg.norm(Ix_cv2_flat) * np.linalg.norm(Ix_numpy_flat) + 1e-8)
-    
-    # # Cosine similarity
-    # numerator = np.sum((Ix_cv2 - Ix_cv2.mean()) * (Ix_numpy - Ix_numpy.mean()))
-    # denominator = np.sqrt(np.sum((Ix_cv2 - Ix_cv2.mean())**2) * np.sum((Ix_numpy - Ix_numpy.mean())**2))
-    # ncc = numerator / (denominator + 1e-8)  # To avoid division by zero
-    
-    # # Gradient direction similarity (GDS)
-    # angle_diff = np.arctan2(Iy_cv2, Ix_cv2) - np.arctan2(Iy_numpy, Ix_numpy)
-    # angle_diff = np.abs((angle_diff + np.pi) % (2 * np.pi) - np.pi)  # Normalize to [0, pi]
-    # gds = np.mean(angle_diff)
 \end{lstlisting}
 
 \end{document}
