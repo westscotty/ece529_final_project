@@ -47,9 +47,10 @@
   - Developed psnr, mae, ssim, precison, and recall methods for images to be evaluated against each other (3.5 hours)
 - **2024-12-04**: Connected mc script to lucas kanade script in order to generate data and plots that show the results from each seed compared to the others (3.5 hours)
   - Also updated time_keeping sheet
+- **2024-12-06**: Wrote report, adding images, plots, theory, code snippets, and explanations about code and my implementations of it (9.5 hours)
 
 ## TODO
 
 - comment more code
 - Work on report report detailing the algorithm design and code implementation comparing the code from scratch versus the code from openCV
-- Need to write about the convolutio algorithm for the sobel and gaussian operators
+- More analysis if time permits about klt variable correlation (using monte carlo script setup)

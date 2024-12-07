@@ -451,31 +451,31 @@ During the processing of the video, the script keeps track of the number of feat
 \onecolumn
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.5\linewidth]{images/sample_image_0.png}
-    \caption{Detected corners using the Shi-Tomasi method. Left image is pure Numpy implementation, right image is OpenCV's goodFeaturesToTrack method. Red circles indicate detected corners overlaid on the input image.}
+    \includegraphics[width=0.8\linewidth]{images/sample_image_0.png}
+    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted bewteen the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
     \label{fig:sample_1}
 \end{figure}
 
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.5\linewidth]{images/sample_image_1.png}
-    \caption{Detected corners using the Shi-Tomasi method. Left image is pure Numpy implementation, right image is OpenCV's goodFeaturesToTrack method. Red circles indicate detected corners overlaid on the input image.}
+    \includegraphics[width=0.8\linewidth]{images/sample_image_1.png}
+    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted bewteen the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
     \label{fig:sample_2}
 \end{figure}
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.5\linewidth]{images/sample_image_2.png}
-    \caption{Detected corners using the Shi-Tomasi method. Left image is pure Numpy implementation, right image is OpenCV's goodFeaturesToTrack method. Red circles indicate detected corners overlaid on the input image.}
+    \includegraphics[width=0.8\linewidth]{images/sample_image_2.png}
+    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted bewteen the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
     \label{fig:sample_3}
 \end{figure}
 
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.5\linewidth]{images/sample_image_3.png}
-    \caption{Detected corners using the Shi-Tomasi method. Left image is pure Numpy implementation, right image is OpenCV's goodFeaturesToTrack method. Red circles indicate detected corners overlaid on the input image.}
+    \includegraphics[width=0.8\linewidth]{images/sample_image_3.png}
+    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted bewteen the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
     \label{fig:sample_4}
 \end{figure}
 \twocolumn
@@ -483,8 +483,8 @@ During the processing of the video, the script keeps track of the number of feat
 \onecolumn
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.5\linewidth]{images/sample_image_4.png}
-    \caption{Detected corners using the Shi-Tomasi method. Left image is pure Numpy implementation, right image is OpenCV's goodFeaturesToTrack method. Red circles indicate detected corners overlaid on the input image.}
+    \includegraphics[width=0.8\linewidth]{images/sample_image_4.png}
+    \caption{Upper half is detected corners using the Shi-Tomasi method. Bottom half is Lucas-Kanade good corners that persisted through the optical flow calculations. Left side is pure NumPy implementation, right side is OpenCV's calcOpticalFlowPyrLK method. Blue circles are simply all corners detected, green circles indicate good corners that have persisted bewteen the previous frame to the current frame, and red circles are new corners initialized for the current frame if needed.}
     \label{fig:sample_5}
 \end{figure}
 \twocolumn
@@ -694,6 +694,13 @@ Monte Carlo simulation involves running 50 seeds (runs), each with randomized pa
 
 A histogram was generated to visualize the distributions of these parameters, to ensure they match the desired inputs, see Figure \ref{fig:mc_hist}.
 
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_histogram.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_hist}
+\end{figure}
+
 \subsection{Processing and Analysis}
 
 For each run, parameters are passed to the Lucas-Kanade algorithm via the \texttt{lucas\_kanade\_optical\_flow} function (found in the Appendix as code list \ref{lst:lk}). Key features include:
@@ -711,83 +718,6 @@ The following metrics are captured and plotted against the other Monte Carlo see
 \end{itemize}
 
 The results for these 50 Monte Carlo seeds are shown in Figures \ref{fig:mc_stc_mae} through \ref{fig:mc_lk_rec}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_histogram.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_hist}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_stc_mae.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_stc_mae}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_stc_psnr.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_stc_psnr}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_stc_ssim.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_stc_ssim}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_stc_precision.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_stc_prec}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_stc_recall.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_stc_rec}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_lk_mae.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_lk_mae}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_lk_psnr.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_lk_psnr}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_lk_ssim.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_lk_ssim}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_lk_precision.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_lk_prec}
-\end{figure}
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=\linewidth]{mc_images/mc_lk_recall.png}
-    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
-    \label{fig:mc_lk_rec}
-\end{figure}
 
 \section{Discussion}
 Through basic evaluation of the algorithms developed in NumPy in this project and the optimized OpenCV implementation, they have good performance matching overall for 50 Monte Carlo seeds. Both are detecting good corners with good precision and recall scores between the corners detected and corners persisting through the optical flow calculations. Overall, the NumPy KLT algorithm works as intended and with more studies focused on optimization, the results would prove to more closely match the OpenCV algorithms.
@@ -830,6 +760,82 @@ Additional work would be on the analysis side of this project, doing a correlati
     C. Kanade, T. Lucas, and B. Tomas, "An improved optical flow algorithm," in \textit{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}, 1987, pp. 12-21. [Online]. Available: \url{https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6716443}.
     
 \end{thebibliography}
+
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_stc_mae.png}
+    \caption{Mean absolute error between images with corners for all seeds.}
+    \label{fig:mc_stc_mae}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_stc_psnr.png}
+    \caption{Peak signal to noise ratio between images with corners for all seeds.}
+    \label{fig:mc_stc_psnr}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_stc_ssim.png}
+    \caption{Structural similarity index between images with corners for all seeds.}
+    \label{fig:mc_stc_ssim}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_stc_precision.png}
+    \caption{Precision calculations between all corners between algorithms (euclidean distance was used) for all seeds.}
+    \label{fig:mc_stc_prec}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_stc_recall.png}
+    \caption{Recall calculations between all corners between algorithms (euclidean distance was used) for all seeds.}
+    \label{fig:mc_stc_rec}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_lk_mae.png}
+    \caption{Mean absolute error between images with corners for all seeds.}
+    \label{fig:mc_lk_mae}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_lk_psnr.png}
+    \caption{Peak signal to noise ratio between images with corners for all seeds.}
+    \label{fig:mc_lk_psnr}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_lk_ssim.png}
+    \caption{Structural similarity index between images with corners for all seeds.}
+    \label{fig:mc_lk_ssim}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_lk_precision.png}
+    \caption{Precision calculations between all good corners between algorithms (euclidean distance was used) for all seeds.}
+    \label{fig:mc_lk_prec}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_lk_recall.png}
+    \caption{Recall calculations between all good corners between algorithms (euclidean distance was used) for all seeds.}
+    \label{fig:mc_lk_rec}
+\end{figure}
+
+
+
+
 
 \newpage
 

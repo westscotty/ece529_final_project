@@ -17,7 +17,7 @@ if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
 
 # Number of Monte Carlo runs
-num_runs = 100
+num_runs = 50
 
 # Define distributions for each factor
 distributions = {
