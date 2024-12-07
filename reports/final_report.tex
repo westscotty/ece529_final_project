@@ -8,6 +8,7 @@
 \usepackage{hyperref}
 \usepackage{float}
 \usepackage{dblfloatfix}
+% \usepackage{appendix}
 \usepackage{listings}
 \usepackage{xcolor}  % Optional: For color syntax highlightings
 
@@ -312,7 +313,7 @@ Overall when using these metrics, it was clear that both algorithms worked well 
             
         # Ix, Iy: Gradients in the x, y directions (horizontal/vertical changes).
         # Gradients highlight areas of rapid intensity change, which are corner candidates
-        # Done by alculating the derivative of the intensity function
+        # Done by calculating the derivative of the intensity function
         # Compute image gradients (Ix, Iy) using Sobel filters
         Ix = gradient['NumPy'](gray.copy(), ksize, 0)
         Iy = gradient['NumPy'](gray.copy(), ksize, 1)
@@ -790,54 +791,6 @@ The following metrics are captured and plotted against the other Monte Carlo see
 
 The results for these 50 Monte Carlo seeds are shown in Figures \ref{fig:mc_stc_mae} through \ref{fig:mc_lk_rec}
 
-\section{Discussion}
-Through basic evaluation of the algorithms developed in NumPy in this project and the optimized OpenCV implementation, they have good performance matching overall for 50 Monte Carlo seeds. Both are detecting good corners with good precision and recall scores between the corners detected and corners persisting through the optical flow calculations. Overall, the NumPy KLT algorithm works as intended and with more studies focused on optimization, the results would prove to more closely match the OpenCV algorithms.
-
-The key players determined in the analysis of the Shi-Tomasi corner detection algorithm are three-fold, being the number of allowable corners detected, and the sensitivty threshold used with the eigavalue calculations, and the gaussin sigma value used in the low pass filter. Mixing in the other variables will shift the results around, but not to the same degree as these two variables. A much more in depth study should be conducted to determine at what combinations of these variables caused the algorithm to not perform.
-
-A Gaussian low-pass filter alters the frequency content of a signal by attenuating high-frequency components. The parameter \(\sigma\) directly impacts the filter's behavior in both the spatial and frequency domains.
-
-
-
-Big factors playing a role on the success of detected corners persisting over multiple frames of the video are the error threshold, reinit threshold, and overall the type of video. For objects that are moving extremely fast, this algorithm is not suited well for that.
-
-Overall this project has forced a great deal of learning about how different image processing techniques influence how data can be extracted. The simple low pass filter used for the Shi-Tomasi corners plays a huge role in sharpenig the edges of the objects in the image, ultimately leading to better eigevalue scores where the corners should be predicted.
-
-\bigskip
-
-\section{Conclusions and Future Work}
-This project demonstrates the practical implementation of the KLT feature tracker, highlighting its effectiveness and limitations. Future work could explore integrating advanced outlier rejection methods as well as further statistical methods for analyizing the points detected and better propogating them through time (and space). Ideas from the book Design and Analysis of Modern Tracking Systems by Robert Popoli and Samuel S. Blackamn would be a great start.
-
-Additional work would be on the analysis side of this project, doing a correlation analysis to identify parameter sensitivity, and determine the best combinations of parameters that help the two algorithms (Shi-Tomasi and Lucas-Kanade) truly work in harmony as the Kanade-Lucas-Tomasi algorithm is designed to do.
-
-
-\begin{thebibliography}{1}
-
-    \bibitem{ShiTomasi}
-    J. Shi and C. Tomasi, "Good features to track," in *Proc. IEEE Conf. Computer Vision and Pattern Recognition*, 1994, pp. 593-600.
-    
-    \bibitem{LucasKanade}
-    B. D. Lucas and T. Kanade, "An iterative image registration technique with an application to stereo vision," in *Proc. Intl. Joint Conf. on Artificial Intelligence*, 1981, pp. 674-679.
-    
-    \bibitem{OpenCV}
-    G. Bradski and A. Kaehler, *Learning OpenCV: Computer Vision with the OpenCV Library*. O'Reilly Media, 2008.
-    
-    \bibitem{Tan:Digital_Signal_Processing} 
-    L. Tan, \textit{Digital Signal Processing}, INAOEP, 2013. [Online]. Available: \url{https://www-elec.inaoep.mx/~jmram/Digital_Signal_Processing__LI_TAN.pdf}.
-    
-    \bibitem{Wikipedia:KLT} 
-    "Kanade-Lucas-Tomasi feature tracker," \textit{Wikipedia}, 2023. [Online]. Available: \url{https://en.wikipedia.org/wiki/Kanade%E2%80%93Lucas%E2%80%93Tomasi_feature_tracker}.
-    
-    \bibitem{Oppenheim:Schafer} 
-    A. V. Oppenheim and R. W. Schafer, \textit{Discrete-Time Signal Processing}, 3rd ed., Pearson, 2010.
-    
-    \bibitem{KLT:Original}
-    C. Kanade, T. Lucas, and B. Tomas, "An improved optical flow algorithm," in \textit{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}, 1987, pp. 12-21. [Online]. Available: \url{https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6716443}.
-    
-\end{thebibliography}
-
-
-
 \begin{figure}[h!]
     \centering
     \includegraphics[width=\linewidth]{mc_images/mc_stc_mae.png}
@@ -908,11 +861,104 @@ Additional work would be on the analysis side of this project, doing a correlati
     \label{fig:mc_lk_rec}
 \end{figure}
 
+\section{Discussion}
+Through basic evaluation of the algorithms developed in NumPy in this project and the optimized OpenCV implementation, they have good performance matching overall for 50 Monte Carlo seeds. Both are detecting good corners with good precision and recall scores between the corners detected and corners persisting through the optical flow calculations. Overall, the NumPy KLT algorithm works as intended and with more studies focused on optimization, the results would prove to more closely match the OpenCV algorithms.
+
+The key players determined in the analysis of the Shi-Tomasi corner detection algorithm are three-fold, being the number of allowable corners detected, and the sensitivty threshold used with the eigavalue calculations, and the gaussin sigma value used in the low pass filter. Mixing in the other variables will shift the results around, but not to the same degree as these two variables. A much more in depth study should be conducted to determine at what combinations of these variables caused the algorithm to not perform.
+
+A Gaussian low-pass filter alters the frequency content of a signal by attenuating high-frequency components. The parameter \(\sigma\) directly impacts the filter's behavior in both the spatial and frequency domains.
+
+
+
+Big factors playing a role on the success of detected corners persisting over multiple frames of the video are the error threshold, reinit threshold, and overall the type of video. For objects that are moving extremely fast, this algorithm is not suited well for that.
+
+Overall this project has forced a great deal of learning about how different image processing techniques influence how data can be extracted. The simple low pass filter used for the Shi-Tomasi corners plays a huge role in sharpenig the edges of the objects in the image, ultimately leading to better eigevalue scores where the corners should be predicted.
+
+\bigskip
+
+\section{Conclusions and Future Work}
+This project demonstrates the practical implementation of the KLT feature tracker, highlighting its effectiveness and limitations. Future work could explore integrating advanced outlier rejection methods as well as further statistical methods for analyizing the points detected and better propogating them through time (and space). Ideas from the book Design and Analysis of Modern Tracking Systems by Robert Popoli and Samuel S. Blackamn would be a great start.
+
+Additional work would be on the analysis side of this project, doing a correlation analysis to identify parameter sensitivity, and determine the best combinations of parameters that help the two algorithms (Shi-Tomasi and Lucas-Kanade) truly work in harmony as the Kanade-Lucas-Tomasi algorithm is designed to do.
+
+
+\begin{thebibliography}{1}
+
+    \bibitem{ShiTomasi}
+    J. Shi and C. Tomasi, "Good features to track," in *Proc. IEEE Conf. Computer Vision and Pattern Recognition*, 1994, pp. 593-600.
+    
+    \bibitem{LucasKanade}
+    B. D. Lucas and T. Kanade, "An iterative image registration technique with an application to stereo vision," in *Proc. Intl. Joint Conf. on Artificial Intelligence*, 1981, pp. 674-679.
+    
+    \bibitem{OpenCV}
+    G. Bradski and A. Kaehler, *Learning OpenCV: Computer Vision with the OpenCV Library*. O'Reilly Media, 2008.
+    
+    \bibitem{Tan:Digital_Signal_Processing} 
+    L. Tan, \textit{Digital Signal Processing}, INAOEP, 2013. [Online]. Available: \url{https://www-elec.inaoep.mx/~jmram/Digital_Signal_Processing__LI_TAN.pdf}.
+    
+    \bibitem{Wikipedia:KLT} 
+    "Kanade-Lucas-Tomasi feature tracker," \textit{Wikipedia}, 2023. [Online]. Available: \url{https://en.wikipedia.org/wiki/Kanade%E2%80%93Lucas%E2%80%93Tomasi_feature_tracker}.
+    
+    \bibitem{Oppenheim:Schafer} 
+    A. V. Oppenheim and R. W. Schafer, \textit{Discrete-Time Signal Processing}, 3rd ed., Pearson, 2010.
+    
+    \bibitem{KLT:Original}
+    C. Kanade, T. Lucas, and B. Tomas, "An improved optical flow algorithm," in \textit{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}, 1987, pp. 12-21. [Online]. Available: \url{https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6716443}.
+    
+\end{thebibliography}
+
 
 \newpage
 
 \onecolumn
-\section{Full Python Code Implementation}
+\appendix
+\subsection{Time Log for Project Development}
+
+\begin{itemize}
+    \item \textbf{2024-10-05}: Played with cv2 library in python importing videos and converting to grayscale (2 hours)
+    \item \textbf{2024-10-06}: Played with cv2 library more (1 hour)
+    \item \textbf{2024-10-07}: Created a sobel operator from scratch to use for calculating gradients of the images (2.5 hours)
+    \item \textbf{2024-10-08}: Played with cv2 library using built-in commands for corner detection on an image (4 hours)
+    \item \textbf{2024-10-10}: Developed debugging portions, committed testing scripts to git (2 hours)
+    \item \textbf{2024-10-21}: Developed convolution routine from scratch (3 hours)
+    \item \textbf{2024-10-28}: Hooked up convolution routine with kernels and made it work with sobel operators and other filters (very generic) (4.5 hours)
+    \item \textbf{2024-11-01}: Corner detection algorithm development (Shi-Tomasi corners) (12.5 hours)
+    \begin{itemize}
+        \item Developed Shi-Tomasi code for both numpy and cv2 implementations, including error checking code
+        \item Added plotting to show difference between home-grown solution for corner detection vs OpenCV module
+        \item Added k-means clustering method for grouping detected points for the purpose of drawing bounding boxes
+        \item Added several basic image transformations including high/low pass filters, and histogram equalization
+        \item Added code for drawing uniform plots
+        \item Added debugging code for evaluating metrics between image operations during intermediate steps
+    \end{itemize}
+    \item \textbf{2024-11-02}: Polished the Shi-Tomasi method a little more, and took a stab at implementing the optical flow portion of the Lucas-Kanade algorithm (4.5 hours)
+    \item \textbf{2024-11-04}: Developed further the Lucas-Kanade method (OpenCV portion) and generated a video utilities file to use for generic function calls. Ready to convert to implementing the Lucas-Kanade algorithm from scratch now that the wrapper for the results is flushed out. (4.75 hours)
+    \item \textbf{2024-11-05}: Developed algorithm for calcOpticalFlowPyrLK method, using the same inputs as the cv2 method. Now I have a fully functional custom KLT algorithm and a cv2 implementation. Next steps are making the custom method run solely on numpy operators, as well as quantifying performance between it, and adding comments throughout to discuss the math behind each operation. (7 hours)
+    \item \textbf{2024-11-10}: Working on adding numpy versioning to the Lucas-Kanade algorithm (now fully numpy convolutions can be used) as well as added a frame skipping routine and a recursive pyrdown image operation to make the images smaller and therefore faster to calculate on (5.5 hours)
+    \item \textbf{2024-11-15}: Revisited code for corner detections, made it work by testing both baseline and custom methods for corners (3 hours)
+    \item \textbf{2024-11-18}: Worked on code cleanup (2 hours)
+    \item \textbf{2024-11-21}: Developed video utilities to better work with the code base, more generic now (3 hours)
+    \item \textbf{2024-11-22}: Worked on plotting functions to come up with methods to figure out how to best plot the corners detected (nearest neighbor, k-means clustering, Euclidean distance grouping) (4 hours)
+    \item \textbf{2024-11-25}: Worked on testing metric ideas (2 hours)
+    \item \textbf{2024-12-02}: Updated code for all image operations to be more generic, only working with a single image at a time (2.5 hours)
+    \begin{itemize}
+        \item Started final report (1.5 hours)
+        \item Developed testing metrics for cv2 implementation versus numpy implementation
+        \item Split focus between corners, persisting corners, and corner location (number of corners over all)
+        \item Developed testing metric plots (2 hours)
+        \item Reworked convolution algorithm (1.5 hour)
+    \end{itemize}
+    \item \textbf{2024-12-03}: Developed method for output images to be in quadrants (3 hours)
+    \item \textbf{2024-12-03}: Developed MC analysis script for evaluating performance overall (3 hours)
+    \item \textbf{2024-12-03}: Developed PSNR, MAE, SSIM, precision, and recall methods for images to be evaluated against each other (3.5 hours)
+    \item \textbf{2024-12-04}: Connected MC script to Lucas-Kanade script in order to generate data and plots that show the results from each seed compared to the others (3.5 hours)
+    \item \textbf{2024-12-04}: Also updated time-keeping sheet
+    \item \textbf{2024-12-06}: Wrote report, adding images, plots, theory, code snippets, and explanations about code and my implementations of it (9.5 hours)
+    \item \textbf{2024-12-07}: Finalized report (4.5 hours)
+\end{itemize}
+\bigskip
+
+\subsection{Full Python Code Implementation}
 For this project, all of the code has been implemented from scratch, including the video and image reading, writing, converting, processing, etc., various plotting scripts, image transormations, Monte-Carlo analysis, Shi-Tomasi corners, Lucas-Kanade optical flow, etc.
 
 \begin{itemize}
@@ -1912,8 +1958,6 @@ For this project, all of the code has been implemented from scratch, including t
     white = (255, 255, 255)
     
     def draw_corner_markers(img, corners, color=red, size=2):
-        # if not type(corners) == type([]):
-        #     breakpoint()
         for (y, x) in corners:
             x, y = int(x), int(y)
             cv2.circle(img, (x, y), size, color, -1)
@@ -2098,9 +2142,6 @@ For this project, all of the code has been implemented from scratch, including t
             
             # Add the bounding box to the list
             bounding_boxes.append((min_x, min_y, max_x, max_y))
-    
-            # Debug output
-            # print(f"Group: {group}, Bounding Box: ({min_x}, {min_y}, {max_x}, {max_y})")
     
         return bounding_boxes
     
