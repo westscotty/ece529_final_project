@@ -9,7 +9,7 @@
 \usepackage{float}
 \usepackage{dblfloatfix}
 \usepackage{listings}
-\usepackage{xcolor}  % Optional: For color syntax highlighting
+\usepackage{xcolor}  % Optional: For color syntax highlightings
 
 \lstdefinestyle{python}{
     language=Python,
@@ -154,23 +154,37 @@ The following parameters were configured for the implementation:
 The algorithm uses OpenCV's \texttt{cv2.goodFeaturesToTrack} function for efficient corner detection as the baseline. Additionally, a custom implementation was developed for comparison, leveraging NumPy to compute the structure tensor and eigenvalues directly.
 To enhance robustness, detected corners were refined using a scaled-down version of the image, ensuring that high-quality corners were retained while minimizing noise. 
 
-Once the image was passed to the Shi-Tomasi routine (code snippet: \ref{lst:shi-tomasi}) routine with the other design parameters defined, the image would be converted to grayscale if not already, then the image would be convolved with a Sobel Kernel in both the x and y directions to calculate Ix and Iy (see Figure \ref{fig:sobel_gradient}). 
+Once the image was passed to the Shi-Tomasi routine (see code list \ref{lst:shi-tomasi}) routine with the other design parameters defined, the image would be converted to grayscale if not already, then the image would be convolved with a Sobel Kernel in both the x and y directions to calculate Ix and Iy (see Figure \ref{fig:sobel_gradient}). 
 
 Following these new convolved images, the componets of the structure tensor (M) could be created, with Ixx showing the horizontal intensity change, Iyy the vertical intensity change, and Ixy the interaction between the directional intensity changes (see Figure \ref{fig:pre_gaussian_lpf}). These new images (matrices) are then sent through a low pass gaussian filter to reduces noise and minor variations, and overall smooth the image (see Figure \ref{fig:gaussian_lpf}). 
 
 From there the minimum eigenvalues for each pixel are calculated (Shi-Tomasi score), and in tandem with the determinant of the structure tensor and a sensitivty response, quality corner candidates can be created for the image. These corner candidates are then sent sorted by strongest response, the sent through a density filter.
 
-Writing the convoluton algorithm in two dimensions was a challenge not due to the complexity of the problem, but due to the length of time is takes to have numpy loop over the image with a kernel. After research and testing, the Numba library for Python was used to accelerate the code, allowing the convolutions to take place rapidly, allowing the development of the this part of the project to move forward.
+Writing the convoluton algorithm in two dimensions was a challenge not due to the complexity of the problem, but due to the length of time is takes to have numpy loop over the image with a kernel. After research and testing, the Numba library for Python was used to accelerate the code, allowing the convolutions to take place rapidly, allowing the development of the this part of the project to move forward (see code list \ref{lst:convolution}).
 
-After the various image operations and compuations were completed, it made sense to ensure that points were not overlapping. Typically using a max-suppression like algorithm could work for this, instead a filter was written to simply only allow points within a specified minimum pixel distance to pass through. This filter also ensured that no points along the edge of the image were detected.The minimum distance constraint was enforced to prevent clustering of corners in regions with high texture.
+After the various image operations and compuations were completed, it made sense to ensure that points were not overlapping. Typically using a max-suppression like algorithm could work for this, instead a filter was written to simply only allow points within a specified minimum pixel distance to pass through. This filter also ensured that no points along the edge of the image were detected. The minimum distance constraint was enforced to prevent clustering of corners in regions with high texture. See code list \ref{lst:corner_filter} for code implementation.
+
+Work was started on introducing more image operations into the custom NumPy algorith utilizing histogram equalizations and other filter types such as a median filter. Basic code was developed to implement these ideas, but the time was not there to assess. 
 \bigskip
 
 \subsubsection{Visualization}
 The detected corners were visualized by overlaying circles on the original frames. Each circle represented a corner, highlighting regions of interest identified by the algorithm. This visualization was instrumental in validating the accuracy and consistency of corner detection. Figures \ref{fig:shi_tomasi_results} and \ref{fig:shi_tomasi_results2} show side by side the pure NumPy (left) compared to the OpenCV.goodFeaturesToTrack (right) corner candidates instrumented with identical feature parameters. These images differ in sensitivity and number of allowable corners detectable.
+
+Many hours were spent on plotting methods for grouping corner points after getting the corner detections to work. These methods include a simply distance grouping via pixel threshold, nearest neighbor look up based on a max distance, and k-means clustering. These methods are not shown in the resulting images, but the methods help to draw bounding boxes around areas of interest (more densely populated areas) especially when working through the design of the algorithm was underway.
 \bigskip
 
 \subsubsection{Performance Comparison}
-A comparison between the custom implementation and OpenCV's functions revealed that the custom numpy approach provided similar accuracy while allowing greater flexibility in parameter tuning. OpenCV's implementation, however, demonstrated superior computational efficiency, even after optimizing the code using advanced python libraries (Numba) to accelerate specific sections of code.
+A comparison between the custom implementation and OpenCV's functions revealed that the custom numpy approach provided similar accuracy while allowing greater flexibility in parameter tuning. OpenCV's implementation, however, demonstrated superior computational efficiency, even after optimizing the code using advanced python libraries (Numba) to accelerate specific sections of code. For performance comparisons, a few metrics were employed to quantify the results between the NumPy and OpenCV implementations.
+
+\begin{itemize}
+    \item \textbf{Number of Corners:} The number of corners actually produced by the algorithm (see Figure \ref{fig:stc-corners})
+    \item \textbf{Mean Absolute Error (MAE):} Measured average magnitude of absolute differences between the pixel values of both images (see Figure \ref{fig:stc-mae})
+    \item \textbf{Peaks Signal to Noise Ratio (PSNR):} Quality between both images (see Figure \ref{fig:stc-psnr})
+    \item \textbf{Structural Similarity Index (SSIM:)} Evaluates image quality by assessing how well the structural content of one image matches the other (see Figure \ref{fig:stc-ssim})
+    \item \textbf{Precision and Recall:} Measures the accuracy of point matching between the detected corners in the both images (see Figures \ref{fig:stc-prec} and \ref{fig:stc-rec})
+\end{itemize}
+
+Overall when using these metrics, it was clear that both algorithms worked well enough to detect corners usable in the Lucas-Kanade optical flow problem. See Figures \ref{fig:stc-corners} through \ref{fig:stc-rec} for example output produced when processing a video of Blue Angels Fighters flying in their diamon formation.
 
 \onecolumn
 \begin{figure}[t]
@@ -208,6 +222,48 @@ A comparison between the custom implementation and OpenCV's functions revealed t
     \label{fig:shi_tomasi_results2}
 \end{figure}
 \twocolumn
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/stc_corners.png}
+    \caption{Number of corners detected between the algorithms.}
+    \label{fig:stc-corners}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/stc_mae.png}
+    \caption{Mean absolute error between the images with corners plotted.}
+    \label{fig:stc-mae}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/stc_psnr.png}
+    \caption{Peak signal to noise ratio betwen images with corners plotted.}
+    \label{fig:stc-psnr}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/stc_ssim.png}
+    \caption{Structural similarity index betwen images with corners plotted.}
+    \label{fig:stc-ssim}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/stc_precision.png}
+    \caption{Precision calculations between all corners between algorithms (euclidean distance was used)}
+    \label{fig:stc-prec}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/stc_recall.png}
+    \caption{Recall calculations between all corners between algorithms (euclidean distance was used)}
+    \label{fig:stc-rec}
+\end{figure}
 
 \onecolumn
 \begin{lstlisting}[style=python, caption={Shi-Tomasi Corners Function}, label={lst:shi-tomasi}]
@@ -356,10 +412,10 @@ For each pyramid level, the flow is calculated by solving the system of equation
 The optical flow is first computed at the smallest resolution (top of the pyramid), and the computed flow is propagated to larger resolutions by scaling the flow and adjusting the points accordingly. This multi-level approach allows for better handling of large motions.
 
 % \subsubsection{Flow Calculation Using NumPy and OpenCV}
-The function \texttt{calcOpticalFlowPyrLK\_numpy} is the custom NumPy-based implementation of the pyramidal Lucas-Kanade method, while \texttt{calcOpticalFlowPyrLK} uses OpenCV's optimized implementation. Both functions follow the same basic structure but differ in implementation. The NumPy version directly computes gradients and solves the flow equations, while OpenCV uses highly optimized C++ functions for these operations.
+The function \texttt{calcOpticalFlowPyrLK\_numpy} (see code list \ref{lst:calcOpticalFlowPyrLK}) is the custom NumPy-based implementation of the pyramidal Lucas-Kanade method, while \texttt{cv2.calcOpticalFlowPyrLK} uses OpenCV's optimized implementation. Both functions follow the same basic structure but differ in implementation. The NumPy version directly computes gradients and solves the flow equations, while OpenCV uses highly optimized C++ functions for these operations.
 
 % \subsubsection{Point Tracking}
-At each frame, the feature points are tracked from their position in the previous frame to their new position in the current frame. The \texttt{validate\_points} function ensures that only valid points are kept (i.e., points that are successfully tracked). It checks the tracking status (\texttt{st}) and the error (\texttt{err}) against predefined thresholds to filter out unreliable tracks.
+At each frame, the feature points are tracked from their position in the previous frame to their new position in the current frame. The \texttt{validate\_points} function (see code list \ref{lst:valpoints}) ensures that only valid points are kept (i.e., points that are successfully tracked). It checks the tracking status (\texttt{st}) and the error (\texttt{err}) against predefined thresholds to filter out unreliable tracks.
 
 % \subsubsection{Reinitialization}
 If the number of valid points falls below a threshold, or if the tracking quality degrades (as indicated by the error threshold), the system reinitializes the feature points using corner detection. This ensures that the tracker remains robust over time, even in challenging conditions.
@@ -374,7 +430,7 @@ The tracked points are visually represented in a video where:
     \item The bottom-left quadrant shows the points tracked by the NumPy-based Lucas-Kanade method
     \item The bottom-right quadrant shows the points tracked by OpenCV Lucas-Kanade method
 \end{itemize}
-The blue points are simply the Shi-Tomasi corners. The green points are considered good points tracked from one the previous frame to the current frame, and the red points are new corners added to the list of viable points for the optical flow calculations based on the reinitalization criteria. Figures \ref{fig:sample_1} through \ref{fig:sample_4} show a 4-frame sequence of corners being detected, and persisting over several frames, with many corners falling away and new corners being initizalized.
+The blue points are simply the Shi-Tomasi corners. The green points are considered good points tracked from one the previous frame to the current frame, and the red points are new corners added to the list of viable points for the optical flow calculations based on the reinitalization criteria. Figures \ref{fig:sample_1} through \ref{fig:sample_5} show a 5-frame sequence of corners being detected, and persisting over several frames, with many corners falling away and new corners being initizalized.
 \bigskip
 
 \subsubsection{Handling Edge Cases}
@@ -385,22 +441,13 @@ The blue points are simply the Shi-Tomasi corners. The green points are consider
 \bigskip
 
 \subsubsection{Statistical Tracking}
-Throughout the tracking process, several metrics are calculated to evaluate the performance of the optical flow algorithm:
-\begin{itemize}
-    \item Mean Absolute Error (MAE) between the tracked points and the true positions (or ground truth).
-    \item Peak Signal-to-Noise Ratio (PSNR) and Structural Similarity Index (SSIM) are calculated to assess the image quality after tracking.
-    \item Precision and Recall are computed to measure the accuracy of point matching between the detected corners in the current frame and the previous frame.
-\end{itemize}
+The same metrics used in evaluating the Shi-Tomasi corner detection algorith were used for evaluating the Lucas-Kanade algorithms, only using images with the corners that were succesful in persiting through frames were recorded. Addtional metrics were created to record how often either algorithm attempted to validate points based on the given thresholds, as well as how often corners for the image were reinitalized. See Figures \ref{fig:lk-corners} through \ref{fig:lk-rec} for example output produced when processing a video of Blue Angels Fighters flying in their diamon formation.
 \bigskip
 
 \subsubsection{Performance Metrics}
 During the processing of the video, the script keeps track of the number of feature points detected and tracked, as well as the number of reinitializations (when feature points are lost or tracking fails). These metrics are collected and saved for later analysis.
 \bigskip
 
-
-\section{Experimental Results}
-[This section will contain your experimental results, with tables and graphs showing the impact of varying parameters such as window size, sensitivity, and threshold values. Discuss the results with respect to accuracy, robustness, and computation time.]
-\bigskip
 
 % \subsubsection{Statistical Tracking}
 % Throughout the tracking process, several metrics are calculated to evaluate the performance of the optical flow algorithm:
@@ -445,13 +492,330 @@ During the processing of the video, the script keeps track of the number of feat
 \end{figure}
 \twocolumn
 
+\onecolumn
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\linewidth]{images/sample_image_4.png}
+    \caption{Detected corners using the Shi-Tomasi method. Left image is pure Numpy implementation, right image is OpenCV's goodFeaturesToTrack method. Red circles indicate detected corners overlaid on the input image.}
+    \label{fig:sample_5}
+\end{figure}
+\twocolumn
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/lk_good_corners.png}
+    \caption{Number of good corners remaining after optical flow calculations between the algorithms.}
+    \label{fig:lk-corners}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/reinits.png}
+    \caption{Times when not enough corners persisted, and the algorithm had to reinitialize points.}
+    \label{fig:lk-reinits}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/attempts.png}
+    \caption{Times when attempts to go through the optical flow calculations were taken.}
+    \label{fig:lk-attempts}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/lk_mae.png}
+    \caption{Mean absolute error between the images with corners plotted.}
+    \label{fig:lk-mae}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/lk_psnr.png}
+    \caption{Peak signal to noise ratio betwen images with corners plotted.}
+    \label{fig:lk-psnr}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.9\linewidth]{images/lk_ssim.png}
+    \caption{Structural similarity index betwen images with corners plotted.}
+    \label{fig:lk-ssim}
+\end{figure}
+
+\onecolumn
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.45\linewidth]{images/lk_precision.png}
+    \caption{Precision calculations between all good corners between algorithms (euclidean distance was used)}
+    \label{fig:lk-prec}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.45\linewidth]{images/lk_recall.png}
+    \caption{Recall calculations between all good corners between algorithms (euclidean distance was used)}
+    \label{fig:lk-rec}
+\end{figure}
+
+
+\onecolumn
+\begin{lstlisting}[style=python, caption={\texttt{calcOpticalFlowPyrLK\_numpy}}, label={lst:calcOpticalFlowPyrLK}]
+    def calcOpticalFlowPyrLK_numpy(prev_img, curr_img, points_prev, lk_params=None, ksize=3, method='numpy'):
+
+    winSize, maxLevel, criteria = lk_params.values()
+    __, max_iter, epsilon = criteria
+    
+    # Initialize variables for flow tracking
+    points_curr = np.copy(points_prev)  # Initial flow starts as the initial points
+    st = np.ones(len(points_prev), dtype=np.uint8)  # Status array
+    err = np.zeros(len(points_prev), dtype=np.float32)  # Error array
+
+    # Build image pyramids for previous and current frames
+    pyramid_prev = [prev_img]
+    pyramid_curr = [curr_img]
+    for i in range(1, maxLevel + 1):
+        pyramid_prev.append(cv2.pyrDown(pyramid_prev[i - 1]))
+        pyramid_curr.append(cv2.pyrDown(pyramid_curr[i - 1]))
+
+    # Start processing from the top of the pyramid (smallest scale)
+    scale_factor = 2 ** maxLevel
+    for level in range(maxLevel, -1, -1):
+        # Scale down point coordinates for current pyramid level
+        points_prev_scaled = points_prev / scale_factor
+        points_curr_scaled = points_curr / scale_factor
+        half_w, half_h = winSize[0] // 2, winSize[1] // 2
+
+        for i, point in enumerate(points_prev_scaled):
+            # Extract patches around the points
+            x, y = int(point[0][0]), int(point[0][1])
+            try:
+                prev_patch = pyramid_prev[level][y - half_h:y + half_h + 1, x - half_w:x + half_w + 1]
+                curr_patch = pyramid_curr[level][y - half_h:y + half_h + 1, x - half_w:x + half_w + 1]
+            except IndexError as e:
+                st[i] = 0
+                continue
+
+            # Proceed if patches match the specified window size
+            if prev_patch.shape == winSize and curr_patch.shape == winSize:
+                # Compute gradients and temporal difference
+                Ix = gradient[method](prev_patch, ksize=ksize, xy=0)
+                Iy = gradient[method](prev_patch, ksize=ksize, xy=1)
+                It = curr_patch.astype(np.float32) - prev_patch.astype(np.float32)
+
+                # Calculate terms for solving the optical flow equation
+                Ixx = Ix ** 2
+                Iyy = Iy ** 2
+                Ixy = Ix * Iy
+                Ixt = Ix * It
+                Iyt = Iy * It
+                A = np.array([[Ixx.sum(), Ixy.sum()], [Ixy.sum(), Iyy.sum()]])
+                b = -np.array([Ixt.sum(), Iyt.sum()])
+
+                # Iteratively solve for optical flow
+                flow = np.zeros(2)
+                for _ in range(max_iter):
+                    if np.linalg.det(A) > 1e-5:
+                        new_flow = np.linalg.solve(A, b)
+                        if np.linalg.norm(new_flow - flow) < epsilon:
+                            break
+                        flow = new_flow
+                    else:
+                        st[i] = 0  # Mark tracking as failed
+                        flow = np.zeros(2)
+                        break
+
+                # Update scaled points with the calculated flow
+                points_curr_scaled[i][0][0] += flow[0]
+                points_curr_scaled[i][0][1] += flow[1]
+                err[i] = np.abs(It).mean()
+
+        # Rescale points back to the original resolution
+        points_curr += (points_curr_scaled * scale_factor - points_curr) / scale_factor
+        scale_factor //= 2
+
+    # Convert results to the expected formats
+    points_curr = np.array(points_curr, dtype=np.float32)
+    st = st.reshape(-1, 1)
+    err = err.reshape(-1, 1)
+    return points_curr, st, err
+\end{lstlisting}
+
+\begin{lstlisting}[style=python, caption={\texttt{validate\_points}}, label={lst:valpoints}]
+    def validate_points(points_prev_0, points_curr, st, err, points_prev, err_thresh, image):
+        
+        reinit = 0
+        if points_curr is not None and st is not None:                
+            valid_mask = st.flatten() == 1
+            
+            # Filter points based on the valid mask
+            good_new = points_curr[valid_mask]
+            good_old = points_prev_0[valid_mask]
+            err_valid = err[valid_mask]
+
+            # Further filter based on error threshold using the same mask
+            err_mask = err_valid.flatten() < err_thresh
+
+            # Final filtering
+            good_new = good_new[err_mask]
+            good_new = good_new.reshape(len(good_new), 2)
+            good_old = good_old[err_mask]
+            good_old = good_old.reshape(len(good_old), 2)
+            
+            ## Draw the tracks on the color frame
+            for i, (new, old) in enumerate(zip(good_new, good_old)):
+                a, b = map(int, new.ravel())
+                c, d = map(int, old.ravel())
+                image = draw_corner_markers(image, [(a, b)], vid.green)  # Green markers
+
+            points_prev_0 = vid.reshape_points(good_new)
+            
+            if type(points_prev_0) == type(None):
+                image = draw_corner_markers(image, np.squeeze(points_prev), vid.red)
+                points_prev_0 = points_prev
+                reinit = 1
+        else:
+            ## Reinitialize points if tracking fails
+            image = draw_corner_markers(image, np.squeeze(points_prev_0), vid.green)
+            image = draw_corner_markers(image, np.squeeze(points_prev), vid.red)
+            points_prev_0 = np.append(points_prev_0, points_prev, axis=0)
+            reinit = 1
+
+        return image, points_prev_0, reinit
+\end{lstlisting}
+\twocolumn
+
+\section{Experimental Results}
+In order to assess the performance of the NumPy and OpenCV KLT algorithms as a whole, a Monte Carlo tesing architecture was written. The same input video was used for all tests. The test setup begins by seeding a random number generator to ensure reproducibility of results. The video used for the anlysis was a Blue Angels Diamond Formation video.
+
+\subsection{Monte Carlo Parameters}
+
+Monte Carlo simulation involves running 50 seeds (runs), each with randomized parameter values sampled from predefined distributions. The following parameters are used:
+\begin{itemize}
+    \item \textbf{max\_corners}: Uniform random integers between 2500 and 5000.
+    \item \textbf{kernel\_size}: Random selection of odd integers from $\{3, 5, 7\}$.
+    \item \textbf{gaussian\_sigma}: Uniform random floats in the range $[0, 2]$, rounded to six decimals.
+    \item \textbf{corner\_sensitivity}: Uniform random floats in the range $[0.0005, 0.005]$, rounded to six decimals.
+    \item \textbf{minimum\_distance}: Uniform random integers between 1 and 5.
+    \item \textbf{reinit\_threshold}: Uniform random integers between 10 and 25.
+    \item \textbf{window\_size}: Random selection of odd integers from $\{3, 5, 7\}$.
+    \item \textbf{error\_threshold}: Uniform random floats in the range $[0.7, 0.9]$, rounded to six decimals.
+    \item \textbf{pyrdown\_level}: Random selection of integers from $\{2, 3, 4\}$.
+\end{itemize}
+
+A histogram was generated to visualize the distributions of these parameters, to ensure they match the desired inputs, see Figure \ref{fig:mc_hist}.
+
+\subsection{Processing and Analysis}
+
+For each run, parameters are passed to the Lucas-Kanade algorithm via the \texttt{lucas\_kanade\_optical\_flow} function (found in the Appendix as code list \ref{lst:lk}). Key features include:
+\begin{itemize}
+    \item Corner detection using Shi-Tomasi with the monte carlo randomized parameters.
+    \item Optical flow computation with Lucas-Kanade using varied window sizes and pyramid levels.
+\end{itemize}
+
+The following metrics are captured and plotted against the other Monte Carlo seed runs:
+\begin{itemize}
+    \item Number of frames processed.
+    \item Reinitializations for corner detection.
+    \item Attempts to use previously detected corners for optical flow.
+    \item Quality metrics including Mean Absolute Error (MAE), Peak Signal-to-Noise Ratio (PSNR), Structural Similarity Index Measure (SSIM), Precision, and Recall.
+\end{itemize}
+
+The results for these 50 Monte Carlo seeds are shown in Figures \ref{fig:mc_stc_mae} through \ref{fig:mc_lk_rec}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_histogram.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_hist}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_stc_mae.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_stc_mae}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_stc_psnr.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_stc_psnr}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_stc_ssim.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_stc_ssim}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_stc_precision.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_stc_prec}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_stc_recall.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_stc_rec}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_lk_mae.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_lk_mae}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_lk_psnr.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_lk_psnr}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_lk_ssim.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_lk_ssim}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_lk_precision.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_lk_prec}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{mc_images/mc_lk_recall.png}
+    \caption{Histogram of all the Monte Carlo variables used and their distributions.}
+    \label{fig:mc_lk_rec}
+\end{figure}
+
 \section{Discussion}
-[Analyze the results, comparing performance across parameter variations. Highlight any strengths and weaknesses identified during testing and suggest possible improvements.]
+Through basic evaluation of the algorithms developed in NumPy in this project and the optimized OpenCV implementation, they have good performance matching overall for 50 Monte Carlo seeds. Both are detecting good corners with good precision and recall scores between the corners detected and corners persisting through the optical flow calculations. Overall, the NumPy KLT algorithm works as intended and with more studies focused on optimization, the results would prove to more closely match the OpenCV algorithms.
+
+The key players determined in the analysis of the Shi-Tomasi corner detection algorithm are two-fold, being the number of allowable corners detected, and the sensitivty threshold used with the eigavalue calculations. Mixing in the other variables will shift the results around, but not to the same degree as these two variables. A much more in depth study should be conducted to determine at what combinations of these variables caused the algorithm to not perform.
+
+Big factors playing a role on the success of detected corners persisting over multiple frames of the video are the error threshold, reinit threshold, and overall the type of video. For objects that are moving extremely fast, this algorithm is not suited well for that.
+
+Overall this project has forced a great deal of learning about how different image processing techniques influence how data can be extracted. The simple low pass filter used for the Shi-Tomasi corners plays a huge role in sharpenig the edges of the objects in the image, ultimately leading to better eigevalue scores where the corners should be predicted.
+
 \bigskip
 
 \section{Conclusions and Future Work}
-This project demonstrates the practical implementation of the KLT feature tracker, highlighting its effectiveness and limitations. Future work could explore integrating advanced outlier rejection methods as well as statiscatl methods for analyizing the points detected and better propogating them through time (and space). Ideas from the book Design and Analysis of Modern Tracking Systems by Robert Popoli and Samuel S. Blackamn would be a great start.
-\bigskip
+This project demonstrates the practical implementation of the KLT feature tracker, highlighting its effectiveness and limitations. Future work could explore integrating advanced outlier rejection methods as well as further statistical methods for analyizing the points detected and better propogating them through time (and space). Ideas from the book Design and Analysis of Modern Tracking Systems by Robert Popoli and Samuel S. Blackamn would be a great start.
+
+Additional work would be on the analysis side of this project, doing a correlation analysis to identify parameter sensitivity, and determine the best combinations of parameters that help the two algorithms (Shi-Tomasi and Lucas-Kanade) truly work in harmony as the Kanade-Lucas-Tomasi algorithm is designed to do.
 
 
 \begin{thebibliography}{1}
@@ -485,7 +849,17 @@ This project demonstrates the practical implementation of the KLT feature tracke
 \section{Full Python Code Implementation}
 For this project, all of the code has been implemented from scratch, including the video and image reading, writing, converting, processing, etc., various plotting scripts, image transormations, Monte-Carlo analysis, Shi-Tomasi corners, Lucas-Kanade optical flow, etc.
 
-\begin{lstlisting}[style=python, caption={Full Monte Carlo Analsys File}]
+\begin{itemize}
+    \item \texttt{monte\_carlo\_analysis.py} (code list \ref{lst:mc})
+    \item \texttt{shi\_tomasi\_corners.py} (code list \ref{lst:stc})
+    \item \texttt{image\_utils.py} (code list \ref{lst:iutils})
+    \item \texttt{lucas\_kanade.py} (code list \ref{lst:lk})
+    \item \texttt{video\_utils.py} (code list \ref{lst:vutils})
+    \item \texttt{plot\_utils.py} (code list \ref{lst:putils})
+    \item \texttt{utils.py} (code list \ref{lst:utils})
+\end{itemize}
+
+\begin{lstlisting}[style=python, caption={\texttt{monte\_carlo\_analysis.py}}, label={lst:mc}]
     import numpy as np
     import lucas_kanade as lk
     import cv2
@@ -612,7 +986,7 @@ For this project, all of the code has been implemented from scratch, including t
     # Determine the correlation between variables to see which is most sensitive
 \end{lstlisting}
 
-\begin{lstlisting}[style=python, caption={Full Shi-Tomasi Corners File}]
+\begin{lstlisting}[style=python, caption={\texttt{shi\_tomasi\_corners.py}}, label={lst:stc}]
     import cv2
     import numpy as np
     import matplotlib.pyplot as plt
@@ -848,7 +1222,7 @@ For this project, all of the code has been implemented from scratch, including t
             
 \end{lstlisting}
 
-\begin{lstlisting}[style=python, caption={Full Image Operations File}]
+\begin{lstlisting}[style=python, caption={\texttt{image\_utils.py}}, label={lst:iutils}]
     import cv2
     import numpy as np
     import sys
@@ -1083,7 +1457,7 @@ For this project, all of the code has been implemented from scratch, including t
         return high_pass
 \end{lstlisting}
 
-\begin{lstlisting}[style=python, caption={Full Lucas Kanade Optical Flow File}]
+\begin{lstlisting}[style=python, caption={\texttt{lucas\_kanade.py}}, label={lst:lk}]
     import cv2
     import os
     import numpy as np
@@ -1416,7 +1790,7 @@ For this project, all of the code has been implemented from scratch, including t
         print(f"Video saved successfully as {output_video}.")
 \end{lstlisting}
 
-\begin{lstlisting}[style=python, caption={Full Video Processing Utilities File}]
+\begin{lstlisting}[style=python, caption={\texttt{video\_utils.py}}, label={lst:vutils}]
     import cv2
     import numpy as np
     from tqdm import tqdm
@@ -1489,7 +1863,7 @@ For this project, all of the code has been implemented from scratch, including t
         return np.array(points, dtype=np.float32).reshape(-1, 1, 2) if points.size > 0 else None
 \end{lstlisting}
 
-\begin{lstlisting}[style=python, caption={Full Plotting Utilities File}]
+\begin{lstlisting}[style=python, caption={\texttt{plot\_utils.py}}, label={lst:putils}]
     import numpy as np
     import cv2
     import matplotlib.pyplot as plt
@@ -1790,7 +2164,7 @@ For this project, all of the code has been implemented from scratch, including t
         plt.close()
 \end{lstlisting}
 
-\begin{lstlisting}[style=python, caption={Full Other Utilities File}]
+\begin{lstlisting}[style=python, caption={\texttt{utils.py}}, label={lst:utils}]
     import numpy as np
     from skimage.metrics import peak_signal_noise_ratio
     import cv2

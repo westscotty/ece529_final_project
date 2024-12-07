@@ -268,7 +268,7 @@ def plot_mc_stats(all_frames, stats1, stats2, yaxis="Y Axis", title="", output_f
         plt.plot(frames, stat2, color='green', label='OpenCV')
     plt.xlabel('Frame ID')
     plt.ylabel(yaxis)
-    plt.legend()
+    # plt.legend()
     plt.grid(visible=True)
     if title:
         plt.suptitle(title)
@@ -287,7 +287,7 @@ def plot_mc_error(all_frames, errors, yaxis="Percent Error", title="", output_fi
         plt.plot(frames, error, label=f'seed_{i}')
     plt.xlabel('Frame ID')
     plt.ylabel(yaxis)
-    plt.legend()
+    # plt.legend()
     plt.grid(visible=True)
     if title:
         plt.suptitle(title)

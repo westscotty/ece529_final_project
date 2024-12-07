@@ -11,13 +11,13 @@ from utils import debug_messages
 np.random.seed(11001)
 
 input_video = "data/videos/blue_angels_formation.mp4"
-start_frame = 175
+start_frame = 150
 output_dir = "./test_results/mc_analysis/blue_angels_formation/"
 if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
 
 # Number of Monte Carlo runs
-num_runs = 50
+num_runs = 100
 
 # Define distributions for each factor
 distributions = {
@@ -61,7 +61,7 @@ for i in tqdm(range(num_runs), desc="Processing Run"):
     
     output_video = os.path.join(output_path, input_video.split("/")[-1])
 
-    frames, reinits, reinits_cv2, attempts, attempts_cv2, stc_corners, stc_corners_cv2, stc_maes, stc_psnrs, stc_ssims, stc_precs, stc_recs, lk_good_corners, lk_good_corners_cv2, lk_maes, lk_psnrs, lk_ssims, lk_precs, lk_recs = lk.lucas_kanade_optical_flow(input_video_path=input_video, output_video_path=output_video, lk_params=lk_params, feature_params=feature_params, reinit_threshold=int(mc_vars[5]), err_thresh=mc_vars[7], start_frame=start_frame, plots_dir=output_path, save_samples=save_samples)
+    frames, reinits, reinits_cv2, attempts, attempts_cv2, stc_corners, stc_corners_cv2, stc_maes, stc_psnrs, stc_ssims, stc_precs, stc_recs, lk_good_corners, lk_good_corners_cv2, lk_maes, lk_psnrs, lk_ssims, lk_precs, lk_recs = lk.lucas_kanade_optical_flow(input_video_path=input_video, output_video_path=output_video, lk_params=lk_params, feature_params=feature_params, reinit_threshold=int(mc_vars[5]), err_thresh=mc_vars[7], start_frame=start_frame, plots_dir=output_path, save_samples=True)
     
     mc_frames.append(frames)
     mc_reinits.append(reinits)
