@@ -2,6 +2,9 @@
 
 \usepackage{amsmath, amssymb, amsfonts}
 \usepackage{graphicx}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{booktabs}
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{cite}
@@ -76,7 +79,45 @@ The elements of the structure tensor have the following interpretations:
     \item \(I_{xy} = \sum_W I_x I_y\): The product of gradients in the \(x\)- and \(y\)-directions, \((\frac{\partial I}{\partial x})(\frac{\partial I}{\partial y})\), which captures the correlation between intensity changes along both axes.
 \end{itemize}
 
-These components characterize the local image structure and are used to evaluate intensity variations for identifying corners.
+These components characterize the local image structure and are used to evaluate intensity variations for identifying corners. 
+\bigskip
+
+\subsubsection{Gaussian Low Pass Filter}
+After computing the components of the structure tensor, the image matrices Ixx, Iyy, and Ixy will be passed through a filter. A Gaussian low-pass filter alters the frequency content of a signal by attenuating high-frequency components. The parameter \(\sigma\) directly impacts the filter's behavior in both the spatial and frequency domains.
+\begin{itemize}
+    \item \textbf{Small \(\sigma\):}
+    \begin{itemize}
+        \item Retains high-frequency components, preserving edges and fine details.
+        \item Narrow impulse response in the spatial domain (localized smoothing).
+        \item Steep roll-off in the frequency domain, providing selective frequency attenuation.
+        \item Minimal blurring, making it suitable for applications requiring detail preservation.
+        \item Applications: Edge detection preprocessing, noise smoothing while retaining details.
+    \end{itemize}
+    \item \textbf{Large \(\sigma\):}
+    \begin{itemize}
+        \item Suppresses high-frequency components, leading to significant smoothing.
+        \item Broad impulse response in the spatial domain (global smoothing).
+        \item Gentle roll-off in the frequency domain, causing a more gradual transition.
+        \item Effective for noise reduction but causes blurring of edges and fine details.
+        \item Applications: Strong noise suppression, down-sampling, or coarse feature extraction
+    \end{itemize}
+\end{itemize}
+
+% \begin{table}[]
+%     \centering
+%     \begin{tabular}{@{}lcc@{}}
+%         \toprule
+%         \textbf{Parameter} & \textbf{Small \(\sigma\)} & \textbf{Large \(\sigma\)} \\ \midrule
+%         Frequency Cutoff   & High (retains more high frequencies) & Low (removes more high frequencies) \\
+%         Bandwidth          & Wide (less aggressive filtering)     & Narrow (more aggressive filtering) \\
+%         Roll-off           & Steep (sharp transitions)            & Gentle (broad transitions) \\
+%         Spatial Smoothing  & Minimal (localized)                  & Strong (global) \\
+%         SNR Improvement    & Limited                              & Significant \\
+%         Edge Preservation  & Good (details retained)              & Poor (details blurred) \\ \bottomrule
+%     \end{tabular}
+%     \caption{Effects of \(\sigma\) on Gaussian Low-Pass Filtering}
+% \end{table}
+
 \bigskip
 
 
@@ -225,42 +266,42 @@ Overall when using these metrics, it was clear that both algorithms worked well 
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.9\linewidth]{images/stc_corners.png}
+    \includegraphics[width=\linewidth]{images/stc_corners.png}
     \caption{Number of corners detected between the algorithms.}
     \label{fig:stc-corners}
 \end{figure}
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.9\linewidth]{images/stc_mae.png}
+    \includegraphics[width=\linewidth]{images/stc_mae.png}
     \caption{Mean absolute error between the images with corners plotted.}
     \label{fig:stc-mae}
 \end{figure}
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.9\linewidth]{images/stc_psnr.png}
+    \includegraphics[width=\linewidth]{images/stc_psnr.png}
     \caption{Peak signal to noise ratio betwen images with corners plotted.}
     \label{fig:stc-psnr}
 \end{figure}
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.9\linewidth]{images/stc_ssim.png}
+    \includegraphics[width=\linewidth]{images/stc_ssim.png}
     \caption{Structural similarity index betwen images with corners plotted.}
     \label{fig:stc-ssim}
 \end{figure}
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.9\linewidth]{images/stc_precision.png}
+    \includegraphics[width=\linewidth]{images/stc_precision.png}
     \caption{Precision calculations between all corners between algorithms (euclidean distance was used)}
     \label{fig:stc-prec}
 \end{figure}
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=0.9\linewidth]{images/stc_recall.png}
+    \includegraphics[width=\linewidth]{images/stc_recall.png}
     \caption{Recall calculations between all corners between algorithms (euclidean distance was used)}
     \label{fig:stc-rec}
 \end{figure}
@@ -722,7 +763,11 @@ The results for these 50 Monte Carlo seeds are shown in Figures \ref{fig:mc_stc_
 \section{Discussion}
 Through basic evaluation of the algorithms developed in NumPy in this project and the optimized OpenCV implementation, they have good performance matching overall for 50 Monte Carlo seeds. Both are detecting good corners with good precision and recall scores between the corners detected and corners persisting through the optical flow calculations. Overall, the NumPy KLT algorithm works as intended and with more studies focused on optimization, the results would prove to more closely match the OpenCV algorithms.
 
-The key players determined in the analysis of the Shi-Tomasi corner detection algorithm are two-fold, being the number of allowable corners detected, and the sensitivty threshold used with the eigavalue calculations. Mixing in the other variables will shift the results around, but not to the same degree as these two variables. A much more in depth study should be conducted to determine at what combinations of these variables caused the algorithm to not perform.
+The key players determined in the analysis of the Shi-Tomasi corner detection algorithm are three-fold, being the number of allowable corners detected, and the sensitivty threshold used with the eigavalue calculations, and the gaussin sigma value used in the low pass filter. Mixing in the other variables will shift the results around, but not to the same degree as these two variables. A much more in depth study should be conducted to determine at what combinations of these variables caused the algorithm to not perform.
+
+A Gaussian low-pass filter alters the frequency content of a signal by attenuating high-frequency components. The parameter \(\sigma\) directly impacts the filter's behavior in both the spatial and frequency domains.
+
+
 
 Big factors playing a role on the success of detected corners persisting over multiple frames of the video are the error threshold, reinit threshold, and overall the type of video. For objects that are moving extremely fast, this algorithm is not suited well for that.
 

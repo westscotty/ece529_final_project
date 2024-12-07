@@ -11,7 +11,7 @@ from utils import debug_messages
 np.random.seed(11001)
 
 input_video = "data/videos/blue_angels_formation.mp4"
-start_frame = 150
+start_frame = 170
 output_dir = "./test_results/mc_analysis/blue_angels_formation/"
 if not os.path.isdir(output_dir):
     os.makedirs(output_dir)

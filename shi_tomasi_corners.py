@@ -153,7 +153,7 @@ if __name__ == "__main__":
     parser.add_argument('-mc', '--max_corners', type=int, default=200, required=False, help='Maximum number of corners to detect (default: 25)')
     parser.add_argument('-ks', '--kernel_size', type=int, choices=[3, 5, 7], default=3, required=False, help='Size of the Sobel kernel (3, 5, or 7, default: 3)')
     parser.add_argument('-m', '--method', type=str, choices=['cv2', 'numpy'], default='numpy', required=False, help='Sobel operator to use (default: numpy)')
-    parser.add_argument('-gs', '--gaussian_sigma', type=int, default=0, required=False, help='Sigma value for gaussian blur kernel')
+    parser.add_argument('-gs', '--gaussian_sigma', type=float, default=0, required=False, help='Sigma value for gaussian blur kernel')
     parser.add_argument('-s', '--shi_tomasi_sensitivity', type=float, default=0.04, required=False, help='Sensitivity for corner detection (default: 0.04)')
     parser.add_argument('-md', '--minimum_distance', type=int, default=10, required=False, help='Minumum distance between detected corners (used for removing oversample corners)')
     parser.add_argument('-debug', '--debug', action='store_true', required=False, default=False, help='Enable debugging print statements')
