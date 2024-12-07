@@ -160,11 +160,11 @@ Following these new convolved images, the componets of the structure tensor (M) 
 
 From there the minimum eigenvalues for each pixel are calculated (Shi-Tomasi score), and in tandem with the determinant of the structure tensor and a sensitivty response, quality corner candidates can be created for the image. These corner candidates are then sent sorted by strongest response, the sent through a density filter.
 
-Writing the convoluton algorithm in two dimensions was a challenge not due to the complexity of the problem, but due to the length of time is takes to have numpy loop over the image with a kernel. After research and testing, the Numba library for Python was used to accelerate the code, allowing the convolutions to take place rapidly, allowing the development of the this part of the project to move forward (see code list \ref{lst:convolution}).
+Writing the convoluton algorithm in two dimensions was a challenge not due to the complexity of the problem, but due to the length of time is takes to have numpy loop over the image with a kernel. After research and testing, the Numba library for Python was used to accelerate the code, allowing the convolutions to take place rapidly, allowing the development of the this part of the project to move forward (see code list \ref{lst:convolution}). The convolution routine that was written handles any kernel with image, as long as the kernel is smaller than the image itself. The image is zero padded always, to ensure that the spatial dimensions of the image is preserved, border pixel information isn't lost, and also aid in keeping the filters with a symmetric operation. The same convolution routine is used for both the Sobel Operator and the Gaussian Low Pass Filter steps, making it generically usable my other routines written for various image operations and filters.
 
 After the various image operations and compuations were completed, it made sense to ensure that points were not overlapping. Typically using a max-suppression like algorithm could work for this, instead a filter was written to simply only allow points within a specified minimum pixel distance to pass through. This filter also ensured that no points along the edge of the image were detected. The minimum distance constraint was enforced to prevent clustering of corners in regions with high texture. See code list \ref{lst:corner_filter} for code implementation.
 
-Work was started on introducing more image operations into the custom NumPy algorith utilizing histogram equalizations and other filter types such as a median filter. Basic code was developed to implement these ideas, but the time was not there to assess. 
+Work was started on introducing more image operations into the custom NumPy algorith utilizing histogram equalizations and other filter types such as a median filter or high pass filter. Basic code was developed to implement these ideas, but the time was not there to assess. These methods can be effective in helping to improve or degrade contrast in the image
 \bigskip
 
 \subsubsection{Visualization}
@@ -440,25 +440,13 @@ The blue points are simply the Shi-Tomasi corners. The green points are consider
 \end{itemize}
 \bigskip
 
-\subsubsection{Statistical Tracking}
+\subsubsection{Statistics Tracking}
 The same metrics used in evaluating the Shi-Tomasi corner detection algorith were used for evaluating the Lucas-Kanade algorithms, only using images with the corners that were succesful in persiting through frames were recorded. Addtional metrics were created to record how often either algorithm attempted to validate points based on the given thresholds, as well as how often corners for the image were reinitalized. See Figures \ref{fig:lk-corners} through \ref{fig:lk-rec} for example output produced when processing a video of Blue Angels Fighters flying in their diamon formation.
 \bigskip
 
 \subsubsection{Performance Metrics}
 During the processing of the video, the script keeps track of the number of feature points detected and tracked, as well as the number of reinitializations (when feature points are lost or tracking fails). These metrics are collected and saved for later analysis.
 \bigskip
-
-
-% \subsubsection{Statistical Tracking}
-% Throughout the tracking process, several metrics are calculated to evaluate the performance of the optical flow algorithm:
-% \begin{itemize}
-%     \item Mean Absolute Error (MAE) between the tracked points and the true positions (or ground truth).
-%     \item Peak Signal-to-Noise Ratio (PSNR) and Structural Similarity Index (SSIM) are calculated to assess the image quality after tracking.
-%     \item Precision and Recall are computed to measure the accuracy of point matching between the detected corners in the current frame and the previous frame.
-% \end{itemize}
-
-% \subsubsection{Performance Metrics}
-% During the processing of the video, the script keeps track of the number of feature points detected and tracked, as well as the number of reinitializations (when feature points are lost or tracking fails). These metrics are collected and saved for later analysis.
 
 \onecolumn
 \begin{figure}[t]
