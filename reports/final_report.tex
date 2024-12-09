@@ -82,6 +82,35 @@ These components characterize the local image structure and are used to evaluate
 
 \subsubsection{Gaussian Low Pass Filter}
 After computing the components of the structure tensor, the image matrices Ixx, Iyy, and Ixy will be passed through a filter. A Gaussian low-pass filter alters the frequency content of a signal by attenuating high-frequency components. The parameter \(\sigma\) directly impacts the filter's behavior in both the spatial and frequency domains.
+
+The Gaussian filter is defined in the spatial domain by the equation:
+\[
+G(x, y) = \frac{1}{2\pi\sigma^2} \exp\left(-\frac{x^2 + y^2}{2\sigma^2}\right),
+\]
+where:
+\begin{itemize}
+    \item \(x\) and \(y\) are the spatial coordinates relative to the center of the filter.
+    \item \(\sigma\) is the standard deviation, controlling the extent of smoothing.
+\end{itemize}
+
+The kernel for a Gaussian filter can be discretely approximated in a computational implementation using:
+\[
+G[i, j] = \exp\left(-\frac{(i - \text{center}_x)^2 + (j - \text{center}_y)^2}{2\sigma^2}\right),
+\]
+where:
+\begin{itemize}
+    \item \(i\) and \(j\) are the discrete coordinates of the kernel.
+    \item \(\text{center}_x\) and \(\text{center}_y\) are the indices of the kernel center.
+    \item the resulting values are normalized such that their sum equals 1.
+\end{itemize}
+
+In the frequency domain, the Gaussian filter has the form:
+\[
+H(u, v) = \exp\left(-2\pi^2\sigma^2 (u^2 + v^2)\right),
+\]
+where \(u\) and \(v\) are the frequency domain coordinates. The filter attenuates high-frequency components by reducing their amplitudes, while retaining low-frequency components.
+
+
 \begin{itemize}
     \item \textbf{Small \(\sigma\):}
     \begin{itemize}
@@ -134,7 +163,7 @@ To ensure spatial diversity in detected features, a minimum distance constraint 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Lucas-Kanade Optical Flow}
-Lucas-Kanade optical flow is a local method for tracking the movement of features between consecutive frames. It assumes that the intensity of a feature remains constant as it moves and that the motion within a small neighborhood is approximately constant.
+Lucas-Kanade optical flow is a local method for tracking the movement of features between consecutive frames. It assumes that the intensity of a feature remains constant as it moves and that the motion within a small neighborhood is approximately constant. Shi-Tomasi corners are foundational for this algorithm, since the corners that are detected are what the Optical Flow equations are working with.
 
 \subsubsection{Optical Flow Constraint Equation}
 The optical flow constraint assumes that the intensity of a pixel remains unchanged:
@@ -365,31 +394,31 @@ Overall when using these metrics, it was clear that both algorithms worked well 
     @jit(nopython=True)
     def apply_convolution(image, kernel):
         """Applies a 2D convolution to an image with the given kernel using Numba."""
-        image_height, image_width = image.shape
-        kernel_height, kernel_width = kernel.shape
+        image_h, image_w = image.shape
+        kernel_h, kernel_w = kernel.shape
         
         # Calculate padding size
-        pad_height = kernel_height // 2
-        pad_width = kernel_width // 2
+        pad_h = kernel_h // 2
+        pad_w = kernel_w // 2
         
         # Create a padded image
-        padded_image_height = image_height + 2 * pad_height
-        padded_image_width = image_width + 2 * pad_width
-        padded_image = np.zeros((padded_image_height, padded_image_width), dtype=np.float32)
-
+        padded_image_h = image_h + 2 * pad_h
+        padded_image_w = image_w + 2 * pad_w
+        padded_image = np.zeros((padded_image_h, padded_image_w), dtype=np.float32)
+    
         # Fill the padded image with the original image
-        for i in range(image_height):
-            for j in range(image_width):
-                padded_image[i + pad_height, j + pad_width] = image[i, j]
-
+        for i in range(image_h):
+            for j in range(image_w):
+                padded_image[i + pad_h, j + pad_w] = image[i, j]
+    
         # Prepare output image
         convolved_image = np.zeros_like(image, dtype=np.float32)
-
+    
         # Perform convolution using nested loops
-        for i in range(image_height):
-            for j in range(image_width):
-                # Extract the region of interest
-                region = padded_image[i:i + kernel_height, j:j + kernel_width]
+        for i in range(image_h):
+            for j in range(image_w):
+                # Extract interest region
+                region = padded_image[i:i + kernel_h, j:j + kernel_w]
                 # Apply the kernel to the region and sum the result
                 convolved_image[i, j] = np.sum(region * kernel)
         
@@ -400,7 +429,7 @@ Overall when using these metrics, it was clear that both algorithms worked well 
     def create_sobel_operator(ksize, xy):
 
         if ksize % 2 == 0:
-            raise ValueError("Kernel size must be an odd number.")
+            raise ValueError("Kernel size must be odd.")
         
         # Create the base grid
         mid = ksize // 2
@@ -422,8 +451,8 @@ Overall when using these metrics, it was clear that both algorithms worked well 
     def gaussian_kernel(size, sigma):
         """Generates a Gaussian kernel."""
                 
-        ax = np.linspace(-(size // 2), size // 2, size)
-        kernel_1d = np.exp(-0.5 * (ax / sigma) ** 2)
+        axis = np.linspace(-(size // 2), size // 2, size)
+        kernel_1d = np.exp(-0.5 * (axis / sigma) ** 2)
         kernel_1d /= kernel_1d.sum()  # Normalize the kernel
         kernel_2d = np.outer(kernel_1d, kernel_1d)
         return kernel_2d
@@ -725,9 +754,9 @@ During the processing of the video, the script keeps track of the number of feat
             
             ## Draw the tracks on the color frame
             for i, (new, old) in enumerate(zip(good_new, good_old)):
-                a, b = map(int, new.ravel())
-                c, d = map(int, old.ravel())
-                image = draw_corner_markers(image, [(a, b)], vid.green)  # Green markers
+                y1, x1 = map(int, new.ravel())
+                y2, x2 = map(int, old.ravel())
+                image = draw_corner_markers(image, [(y1, x1)], vid.green)  # Green markers
 
             points_prev_0 = vid.reshape_points(good_new)
             
@@ -747,11 +776,11 @@ During the processing of the video, the script keeps track of the number of feat
 \twocolumn
 
 \section{Experimental Results}
-In order to assess the performance of the NumPy and OpenCV KLT algorithms as a whole, a Monte Carlo tesing architecture was written. The same input video was used for all tests. The test setup begins by seeding a random number generator to ensure reproducibility of results. The video used for the anlysis was a Blue Angels Diamond Formation video.
+In order to assess the performance of the NumPy and OpenCV KLT algorithms as a whole, a Monte Carlo tesing architecture was written. The same input video was used for all tests. The test setup begins by seeding a random number generator to ensure reproducibility of results. The video used for the anlysis was a Blue Angels Diamond Formation video (source \cite{Pexels:FighterJets}).
 
 \subsection{Monte Carlo Parameters}
 
-Monte Carlo simulation involves running 50 seeds (runs), each with randomized parameter values sampled from predefined distributions. The following parameters are used:
+Monte Carlo simulation involves running 100 seeds (runs), each with randomized parameter values sampled from predefined distributions. The following parameters are used:
 \begin{itemize}
     \item \textbf{max\_corners}: Uniform random integers between 2500 and 5000.
     \item \textbf{kernel\_size}: Random selection of odd integers from $\{3, 5, 7\}$.
@@ -885,7 +914,7 @@ Additional work would be on the analysis side of this project, doing a correlati
 \begin{thebibliography}{1}
 
     \bibitem{ShiTomasi}
-    J. Shi and C. Tomasi, "Good features to track," in *Proc. IEEE Conf. Computer Vision and Pattern Recognition*, 1994, pp. 593-600.
+    J. Shi and C. Tomasi, "Good features to track" in *Proc. IEEE Conf. Computer Vision and Pattern Recognition*, 1994, pp. 593-600.
     
     \bibitem{LucasKanade}
     B. D. Lucas and T. Kanade, "An iterative image registration technique with an application to stereo vision," in *Proc. Intl. Joint Conf. on Artificial Intelligence*, 1981, pp. 674-679.
@@ -903,8 +932,11 @@ Additional work would be on the analysis side of this project, doing a correlati
     A. V. Oppenheim and R. W. Schafer, \textit{Discrete-Time Signal Processing}, 3rd ed., Pearson, 2010.
     
     \bibitem{KLT:Original}
-    C. Kanade, T. Lucas, and B. Tomas, "An improved optical flow algorithm," in \textit{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}, 1987, pp. 12-21. [Online]. Available: \url{https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6716443}.
+    C. Kanade, T. Lucas, and B. Tomas, "An improved optical flow algorithm" in \textit{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}, 1987, pp. 12-21. [Online]. Available: \url{https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6716443}.
     
+    \bibitem{Pexels:FighterJets}
+    Pexels, "Fighter Jets in Blue Sky," [Online]. Available: \url{https://www.pexels.com/video/fighter-jets-in-blue-sky-12954782/}. Accessed: Dec. 7, 2024.
+
 \end{thebibliography}
 
 
@@ -954,7 +986,7 @@ Additional work would be on the analysis side of this project, doing a correlati
     \item \textbf{2024-12-04}: Connected MC script to Lucas-Kanade script in order to generate data and plots that show the results from each seed compared to the others (3.5 hours)
     \item \textbf{2024-12-04}: Also updated time-keeping sheet
     \item \textbf{2024-12-06}: Wrote report, adding images, plots, theory, code snippets, and explanations about code and my implementations of it (9.5 hours)
-    \item \textbf{2024-12-07}: Finalized report (4.5 hours)
+    \item \textbf{2024-12-07}: Finalized report with update images, and added more theory related to the low pass filters used in the corner detection algorithm (6.5 hours)
 \end{itemize}
 \bigskip
 
@@ -1350,7 +1382,7 @@ For this project, all of the code has been implemented from scratch, including t
     def create_sobel_operator(ksize, xy):
 
         if ksize % 2 == 0:
-            raise ValueError("Kernel size must be an odd number.")
+            raise ValueError("Kernel size must be odd.")
         
         # Create the base grid
         mid = ksize // 2
@@ -1369,31 +1401,31 @@ For this project, all of the code has been implemented from scratch, including t
     @jit(nopython=True)
     def apply_convolution(image, kernel):
         """Applies a 2D convolution to an image with the given kernel using Numba."""
-        image_height, image_width = image.shape
-        kernel_height, kernel_width = kernel.shape
+        image_h, image_w = image.shape
+        kernel_h, kernel_w = kernel.shape
         
         # Calculate padding size
-        pad_height = kernel_height // 2
-        pad_width = kernel_width // 2
+        pad_h = kernel_h // 2
+        pad_w = kernel_w // 2
         
         # Create a padded image
-        padded_image_height = image_height + 2 * pad_height
-        padded_image_width = image_width + 2 * pad_width
-        padded_image = np.zeros((padded_image_height, padded_image_width), dtype=np.float32)
+        padded_image_h = image_h + 2 * pad_h
+        padded_image_w = image_w + 2 * pad_w
+        padded_image = np.zeros((padded_image_h, padded_image_w), dtype=np.float32)
     
         # Fill the padded image with the original image
-        for i in range(image_height):
-            for j in range(image_width):
-                padded_image[i + pad_height, j + pad_width] = image[i, j]
+        for i in range(image_h):
+            for j in range(image_w):
+                padded_image[i + pad_h, j + pad_w] = image[i, j]
     
         # Prepare output image
         convolved_image = np.zeros_like(image, dtype=np.float32)
     
         # Perform convolution using nested loops
-        for i in range(image_height):
-            for j in range(image_width):
-                # Extract the region of interest
-                region = padded_image[i:i + kernel_height, j:j + kernel_width]
+        for i in range(image_h):
+            for j in range(image_w):
+                # # Extract interest region
+                region = padded_image[i:i + kernel_h, j:j + kernel_w]
                 # Apply the kernel to the region and sum the result
                 convolved_image[i, j] = np.sum(region * kernel)
         
@@ -1465,8 +1497,8 @@ For this project, all of the code has been implemented from scratch, including t
     def gaussian_kernel(size, sigma):
         """Generates a Gaussian kernel."""
                 
-        ax = np.linspace(-(size // 2), size // 2, size)
-        kernel_1d = np.exp(-0.5 * (ax / sigma) ** 2)
+        axis = np.linspace(-(size // 2), size // 2, size)
+        kernel_1d = np.exp(-0.5 * (axis / sigma) ** 2)
         kernel_1d /= kernel_1d.sum()  # Normalize the kernel
         kernel_2d = np.outer(kernel_1d, kernel_1d)
         return kernel_2d
@@ -1672,9 +1704,9 @@ For this project, all of the code has been implemented from scratch, including t
                 
                 ## Draw the tracks on the color frame
                 for i, (new, old) in enumerate(zip(good_new, good_old)):
-                    a, b = map(int, new.ravel())
-                    c, d = map(int, old.ravel())
-                    image = draw_corner_markers(image, [(a, b)], vid.green)  # Green markers
+                    y1, x1 = map(int, new.ravel())
+                    y2, x2 = map(int, old.ravel())
+                    image = draw_corner_markers(image, [(y1, x1)], vid.green)  # Green markers
     
                 ## Update points for the next frame
                 points_prev_0 = vid.reshape_points(good_new)

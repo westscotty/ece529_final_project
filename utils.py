@@ -5,6 +5,7 @@ from skimage.metrics import structural_similarity
 from video_utils import reshape_points
 from plot_utils import plot_error, plot_stats
 
+squeeze = lambda x : np.squeeze(x).reshape(len(x), 2)
 
 def debug_messages(message):
     print(f"\n\n<< DEBUG >>")
@@ -94,8 +95,8 @@ def mae(image1, image2):
 
 def precision(corners1, corners2, threshold):
     
-    corners1 = np.squeeze(corners1)
-    corners2 = np.squeeze(corners2) 
+    corners1 = squeeze(corners1)
+    corners2 = squeeze(corners2) 
     
     distances = np.linalg.norm(corners1[:, None] - corners2, axis=2)
     min_distances = np.min(distances, axis=1)
@@ -116,8 +117,8 @@ def precision(corners1, corners2, threshold):
 
 def recall(corners1, corners2, threshold):
     
-    corners1 = np.squeeze(corners1)
-    corners2 = np.squeeze(corners2) 
+    corners1 = squeeze(corners1)
+    corners2 = squeeze(corners2) 
     
     distances = np.linalg.norm(corners1[:, None] - corners2, axis=2)
     min_distances = np.min(distances, axis=1)

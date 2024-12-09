@@ -5,7 +5,7 @@ import os
 import sys
 from copy import copy
 import argparse
-from utils import debug_messages, coordinate_density_filter, mae, psnr, ssim
+from utils import debug_messages, coordinate_density_filter, mae, psnr, ssim, squeeze
 from plot_utils import make_comparison_image, draw_corner_markers, red, green, blue
 from image_utils import gaussian_low_pass_cv2, gaussian_low_pass_numpy, sobel_operator_cv2, sobel_operator_numpy, gaussian_high_pass_filter, averaging_low_pass_filter, histogram_equalization
 from tqdm import tqdm
@@ -41,13 +41,13 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
         test_Iy2 = gradient['numpy'](gray.copy(), 3, 1)
         mae_Ix, pnsr_Ix = mae(test_Ix1, test_Ix2), psnr(test_Ix1, test_Ix2)
         mae_Iy, pnsr_Iy = mae(test_Iy1, test_Iy2), psnr(test_Iy1, test_Iy2)
-        debug_messages(f"""
-            Sobel Operators:
-            MAE Ix: {mae_Ix:.5f}
-            MAE Iy: {mae_Iy:.5f}
-            PNSR Ix: {pnsr_Ix:.5f}
-            PNSR Iy: {pnsr_Iy:.5f}
-            """)
+        # debug_messages(f"""
+        #     Sobel Operators:
+        #     MAE Ix: {mae_Ix:.5f}
+        #     MAE Iy: {mae_Iy:.5f}
+        #     PNSR Ix: {pnsr_Ix:.5f}
+        #     PNSR Iy: {pnsr_Iy:.5f}
+        #     """)
         
         out_file = None
         if plots_dir:
@@ -71,12 +71,12 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
     Iyy, sigma_yy = gaussian_low_pass[method](Iyy0, ksize, sigma0)
     Ixy, sigma_xy = gaussian_low_pass[method](Ixy0, ksize, sigma0)
     if debug:
-        debug_messages(f"""
-            Sigmas: 
-            Iyy: {sigma_xx:.5f}
-            Iy: y{sigma_yy:.5f}
-            Ixy: {sigma_xy:.5f}
-                    """)
+        # debug_messages(f"""
+        #     Sigmas: 
+        #     Iyy: {sigma_xx:.5f}
+        #     Iy: y{sigma_yy:.5f}
+        #     Ixy: {sigma_xy:.5f}
+        #             """)
  
         test_Ixx1, sigma_xx1 = gaussian_low_pass['cv2'](Ixx0, 3, 0)
         test_Iyy1, sigma_yy1 = gaussian_low_pass['cv2'](Iyy0, 3, 0)
@@ -87,18 +87,18 @@ def shi_tomasi_corners(img, max_corners=200, ksize=3, method='numpy', sensitivit
         mae_Ixx, pnsr_Ixx = mae(test_Ixx1, test_Ixx2), psnr(test_Ixx1, test_Ixx2)
         mae_Iyy, pnsr_Iyy = mae(test_Iyy1, test_Iyy2), psnr(test_Iyy1, test_Iyy2)
         mae_Ixy, pnsr_Ixy = mae(test_Ixy1, test_Ixy2), psnr(test_Ixy1, test_Ixy2)
-        debug_messages(f"""
-            Guassian Blur Kernels:
-            MAE Ixx: {mae_Ixx:.5f}
-            MAE Iyy: {mae_Iyy:.5f}
-            MAE Ixy: {mae_Ixy:.5f}
-            PSNR Ixx: {pnsr_Ixx:.5f}
-            PSNR Iyy: {pnsr_Iyy:.5f}
-            PSNR Ixy: {pnsr_Ixy:.5f}
-            Sigmas XX: {sigma_xx1}, {sigma_xx2}
-            Sigmas YY: {sigma_yy1}, {sigma_yy2}
-            Sigmas XY: {sigma_xy1}, {sigma_xy2}
-            """)
+        # debug_messages(f"""
+        #     Guassian Blur Kernels:
+        #     MAE Ixx: {mae_Ixx:.5f}
+        #     MAE Iyy: {mae_Iyy:.5f}
+        #     MAE Ixy: {mae_Ixy:.5f}
+        #     PSNR Ixx: {pnsr_Ixx:.5f}
+        #     PSNR Iyy: {pnsr_Iyy:.5f}
+        #     PSNR Ixy: {pnsr_Ixy:.5f}
+        #     Sigmas XX: {sigma_xx1}, {sigma_xx2}
+        #     Sigmas YY: {sigma_yy1}, {sigma_yy2}
+        #     Sigmas XY: {sigma_xy1}, {sigma_xy2}
+        #     """)
 
         out_file = None
         out_file2 = None
@@ -200,13 +200,13 @@ if __name__ == "__main__":
     result_img = img.copy()
     # result_img_bgr = cv2.cvtColor(result_img)  # Convert to color for visualization
     result_img_bgr = cv2.cvtColor(result_img, cv2.COLOR_BGR2RGB)
-    result_img_bgr = draw_corner_markers(result_img_bgr, np.squeeze(corners), color=blue, size=3)
+    result_img_bgr = draw_corner_markers(result_img_bgr, squeeze(corners), color=blue, size=3)
     
     # Copy Image then draw corners on the BGR converted
     result_img2 = img.copy()
     # result_img_bgr2 = cv2.cvtColor(result_img2, cv2.COLOR_GRAY2BGR)  # Convert to color for visualization
     result_img_bgr2 = cv2.cvtColor(result_img2, cv2.COLOR_BGR2RGB)
-    result_img_bgr2 = draw_corner_markers(result_img_bgr2, np.squeeze(corners_cv2), color=blue, size=3)
+    result_img_bgr2 = draw_corner_markers(result_img_bgr2, squeeze(corners_cv2), color=blue, size=3)
 
     # Print corners if the flag is set
     if args.debug:

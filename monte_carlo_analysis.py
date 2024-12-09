@@ -7,17 +7,18 @@ from copy import copy
 from tqdm import tqdm
 import shutil
 from utils import debug_messages
+from subprocess import run
 
 np.random.seed(11001)
 
 input_video = "data/videos/blue_angels_formation.mp4"
-start_frame = 170
-output_dir = "./test_results/mc_analysis/blue_angels_formation/"
+start_frame = 100
+output_dir = "./test_results/mc_analysis/blue_angels_formation_2/"
 if not os.path.isdir(output_dir):
     os.makedirs(output_dir)
 
 # Number of Monte Carlo runs
-num_runs = 50
+num_runs = 100
 
 # Define distributions for each factor
 distributions = {
@@ -82,6 +83,8 @@ for i in tqdm(range(num_runs), desc="Processing Run"):
     mc_lk_ssims.append(lk_ssims)
     mc_lk_precs.append(lk_precs)
     mc_lk_recs.append(lk_recs)
+    
+    # run(f"ffmpeg -i {output_video} -vcodec libx264 -acodec aac {output_video}", shell=True)
     
 
 output_file1 = f"{output_dir}/mc_reinits.png"
